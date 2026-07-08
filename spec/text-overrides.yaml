@@ -1,0 +1,56 @@
+# Text overrides for docs/openapi.json
+# ------------------------------------------------------------------
+# Edit descriptions HERE, never in the JSON. Then run:
+#     python3 spec/apply_text_overrides.py
+# and commit BOTH this file and docs/openapi.json together.
+#
+# Text is Markdown: blank line = new paragraph, "- " = bullet list.
+# Use |- block scalars (as below) for multi-line text.
+#
+# Sections:
+#   info                 -> API-level texts
+#   tags                 -> section intro per tag name
+#   operations           -> summary/description per operationId
+#   schema_descriptions  -> one field, dotted path under components/schemas
+# ------------------------------------------------------------------
+
+info:
+  description: |-
+    Exberry Admin API allows managing exchange static data (instruments, trading calendars and more) as well as sending operational commands (EOD, halt trading and more).
+
+    **Sandbox environment endpoint:** `https://admin-api.uat.exberry-uat.io`
+
+    **Guidelines:**
+    - All numbers are stringified unless explicitly mentioned otherwise. Stringified integers are marked with pattern `^-?[0-9]+$`; stringified decimals with `format: decimal`.
+    - Optional fields should be omitted from request if not required
+    - System ignores any additional parameter that are sent on request body but was not specified in this document
+
+    **HTTP Error Codes:**
+    - 400: Maximum request size exceeded (60KB) or Invalid JSON
+    - 401: Invalid token
+    - 403: Authentication and authorization errors
+    - 404: Route not found
+    - 500: Any other error
+    - 503: System not available
+    - 504: Timeout
+
+tags:
+  Authentication: |-
+    Authenticate with the email and password provided by the Exberry team to receive a JWT token. Use it as a Bearer token on every other request. Regenerate before expiresIn elapses.
+
+operations:
+  Get_Token:
+    summary: Get Token
+    description: |-
+      Exchanges email + password for a JWT bearer token.
+
+      #### Error Codes
+
+      | Code | Message |
+      | --- | --- |
+      | 2 | Wrong email or password |
+      | 10000 | Please login to Admin Application before using API |
+
+schema_descriptions:
+  Instrument.properties.symbol: |-
+    Unique instrument symbol. Max length 16. Allowed characters: a-Z, 0-9, - . ^ = /
