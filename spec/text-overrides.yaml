@@ -17,7 +17,7 @@
 info:
   description: |-
     Exberry Admin API allows managing exchange static data (instruments, trading calendars and more) as well as sending operational commands (EOD, halt trading and more).
-
+    Testing
     **Sandbox environment endpoint:** `https://admin-api.uat.exberry-uat.io`
 
     **Guidelines:**
