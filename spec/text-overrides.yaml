@@ -1,23 +1,24 @@
-# Text overrides for docs/openapi.json
-# ------------------------------------------------------------------
-# Edit descriptions HERE, never in the JSON. Then run:
-#     python3 spec/apply_text_overrides.py
+# Text overrides for docs/openapi.json — THE authoritative source for prose.
+# ---------------------------------------------------------------------------
+# Every tag and every operation MUST have an entry here (CI enforces this).
+# Edit texts HERE, never in the JSON. Then run:
+#     py spec/apply_text_overrides.py
 # and commit BOTH this file and docs/openapi.json together.
 #
-# Text is Markdown: blank line = new paragraph, "- " = bullet list.
-# Use |- block scalars (as below) for multi-line text.
+# Text is Markdown:
+#   - a BLANK line makes a new paragraph (a single line break renders as a space!)
+#   - "- " makes a bullet list;  | tables | work |
 #
 # Sections:
 #   info                 -> API-level texts
 #   tags                 -> section intro per tag name
-#   operations           -> summary/description per operationId
-#   schema_descriptions  -> one field, dotted path under components/schemas
-# ------------------------------------------------------------------
-
+#   operations           -> summary + description per operationId
+#   schema_descriptions  -> targeted field fixes (dotted path), optional
+# ---------------------------------------------------------------------------
 info:
   description: |-
     Exberry Admin API allows managing exchange static data (instruments, trading calendars and more) as well as sending operational commands (EOD, halt trading and more).
-    Testing
+
     **Sandbox environment endpoint:** `https://admin-api.uat.exberry-uat.io`
 
     **Guidelines:**
@@ -33,11 +34,60 @@ info:
     - 500: Any other error
     - 503: System not available
     - 504: Timeout
-
 tags:
-  Authentication: |-
-    Authenticate with the email and password provided by the Exberry team to receive a JWT token. Use it as a Bearer token on every other request. Regenerate before expiresIn elapses.
-
+  Authentication: Authenticate with the email and password provided by the Exberry team to receive a JWT token. Use it as a Bearer token on every other request. Regenerate before expiresIn elapses.
+  Instruments: |-
+    Instruments API allows you to:
+    - Get single instrument details
+    - Get the list of all instruments with their details
+    - Create an instrument
+    - Update existing instruments
+    - Archive an instrument that is no longer in use
+    Samples for both mandatory fields only and all fields can be found in the `Get Instrument` section
+  Instrument Groups: |-
+    Instrument groups allows users to manage instrument grouping with few levels of hierarchy.
+    This is internal feature allow exchange operators to group instruments as needed (this information is not published to participants/ traders anywhere).
+    After creating the groups, an instrument can be added and removed to/ from a group.
+    Instrument Groups API allows you to:
+    - Get single Instrument Group details
+    - Get the list of all instrument Groups with their details
+    - Create an Instrument Group
+    - Update an existing Instrument Group
+  Calendars: |-
+    Calendars API allows you to:
+    - Get single calendar details
+    - Get the list of all calendars with their details
+    - Create a calendar
+    - Update existing calendars
+    - Trigger EOD for a specific calendar
+  MPs: |-
+    MP API allows you to:
+    - Get single MP details
+    - Get the list of all MPs with their details
+    - Create MP
+    - Update existing MP
+    MP Object
+  MP Groups: |-
+    MP Group allows you to configure read only access for group of market participants (or all of them).
+    MP Groups API allows you to:
+    - Get single MP Group details
+    - Get the list of all MP Groups with their details
+    - Create MP Group
+    - Update existing MP Group
+    MP Group Object
+  CBR: |-
+    Circuit Breaker Rules (CBR) API allows you to:
+    - Get single CBR details
+    - Get the list of all CBRs with their details
+    - Create a CBR
+    - Update existing CBRs
+  Tick Size: |-
+    TickSize API allows you to:
+    - Get single TickSize details
+    - Get the list of all TickSizes with their details
+    - Create a TickSize
+    - Update existing TickSize
+  Operations: Operations API allows you to send operational command
 operations:
   Get_Token:
     summary: Get Token
@@ -50,7 +100,847 @@ operations:
       | --- | --- |
       | 2 | Wrong email or password |
       | 10000 | Please login to Admin Application before using API |
+  Create_Instrument:
+    summary: Create Instrument
+    description: |-
+      This API allows to create a new instrument.
 
+      ID will be returned in the response, this ID is the unique identifier of the instrument and should be used when sending update commands.
+
+      Note: this ID can be retrieved via Get Instruments API.
+
+      #### Create Instrument- Error Codes
+
+      | Code | Message |
+      | --- | --- |
+      | 1 | System is unavailable |
+      | 100 | Missing or invalid parameter: \[FieldName\] |
+      | 101 | \[FieldName\] not found |
+      | 101 | \[FieldName\] must be less than or equal to maxLong/10^ fieldPrecision |
+      | 101 | \[FieldName\] must be more than or equal to minLong/10^ fieldPrecision |
+      | 101 | Precision of \[Fieldname\] is greater than \[quantityPrecision\] |
+      | 101 | Precision of \[Fieldname\] is greater than \[pricePrecision\] |
+      | 101 | Precision of quantityIncrement must be \[quantityPrecision\] (quantityPrecision) |
+      | 101 | minQuantity should be less than maxQuantity or equal to it |
+      | 101 | minPrice should be less than maxPrice or equal to it |
+      | 101 | maxQuantity should be less than maxDepth or equal to it |
+      | 101 | Stop Date must be after Start Date |
+      | 101 | Stop date must be in future |
+      | 101 | underlyingInstrumentId/legsInstrumentIds not found |
+      | 101 | Legs \[price/quantity\] precision must be equal to strategy price precision |
+      | 102 | symbol already exists for id: \[instrumentId\] |
+      | 104 | Implied orders are not allowed for \[leg/strategySymbol\] while included in the \[CBRName\] CBR |
+      | 105 | Legs \[price/quantity\] precision must be equal to strategy price precision |
+      | 105 | Strategies are not allowed as legs |
+      | 105 | Legs and Strategy calendars must be the same  <br>  <br>Note: this validation relevant only for active instruments |
+      | 2603 | \[fieldName\] of \[fieldValue\] is not allowed as instrument price precision is \[instrumentPricePrecision\] |
+      | 2605 | \[FieldName\] must be less than maxLong/10^ pricePrecision |
+      | 10001 | Permission denied |
+  Get_Instruments:
+    summary: Get Instruments
+    description: |-
+      This API allows to get a list of all instruments with their details.
+
+      #### Get Instruments- Fields
+
+      **Example for derivativeInstrumentCategory instrument -**
+
+      - InstrumentId: 1,
+
+      - InstrumentId: 2,
+
+      - InstrumentId: 3,
+
+      - InstrumentId: 4,
+
+      - InstrumentId: 10, underlyingInstrumentId: 1, category: Futures, status: active
+
+      - InstrumentId: 11, underlyingInstrumentId: 2, category: Futures, status: disabled
+
+      - InstrumentId: 12, underlyingInstrumentId: 3, category: Spot, status: active
+
+      - InstrumentId: 13, underlyingInstrumentId: 4, category: Spot, status: disabled
+
+
+      When Derivative Instrument Category = Futures → InstrumentId:1 is returned.
+
+      When Derivative Instrument Category = Spot →InstrumentId:3 is returned.
+
+      #### Suffix & Prefix
+
+      | Pattern Type | Description | Sample |
+      | --- | --- | --- |
+      | Contains the word "X" | Find any description/ symbols that contains "X" | X |
+      | Starts with "X" | Find any description/ symbols that start with "X" | X\* |
+      | Ends with "X" | Find any description/ symbol that ends with "X" | \*X |
+      | Equal to 'X' | Find any description/ symbol that = "X" | 'X' |
+
+      #### NEW v1.30.0 Get Instrument- Error Codes
+
+      | Code | Message |
+      | --- | --- |
+      | 102 | Single category should be sent |
+      | 102 | Wrong Sub Category |
+      | 102 | Strategies category should be sent |
+      | 100 | Missing or invalid parameter: \[FieldName\] |
+  Update_Instrument:
+    summary: Update Instrument
+    description: |-
+      This API allows to update existing instrument.
+
+      #### Update Instrument- Error Codes
+
+      All validations in create instrument and the below
+
+      All validations in create instrument and the below
+
+      | Code | Message |
+      | --- | --- |
+      | 100 | Missing or invalid parameter: \[FieldName\] |
+      | 101 | \[FieldName\] not found |
+      | 101 | \[Start Date/~~Stop Date~~ Removed v1.25 ~~/~~ Category\] can’t be changed after start date |
+      | 101 | Category can’t be changed for instrument that is underlying instrument |
+      | 101 | \[FieldName\] can’t be changed for strategy related instrument |
+      | 101 | \[FieldName\] can’t be changed after elapsed |
+      | 105 | Mass cancellation must be done before disabling the instrument |
+      | 2402 | Mass cancellation must be done before changing quantityPrecision |
+      | 2402 | Mass cancellation must be done before changing pricePrecision |
+      | 10001 | Permission denied |
+  Get_Instrument:
+    summary: Get Instrument
+    description: This API allows to get a single instrument details.
+  Archive_Instrument:
+    summary: Archive Instrument
+    description: |-
+      This API allows to archiving of existing instrument
+
+      Please contact the Exberry team if you would like to enable it on your system.
+
+      In order to support a large number of instruments we introduce the ability to archive instruments.
+
+      This is an irreversible operation that should happen only in case the instrument is no longer in use permanently.
+
+      When an instrument is archived, you can still access historical financial information about it, including Orders, Order events, Trades, and Ops reports. You can also create a new instrument with the same symbol, but the archived instrument is no longer tradable.
+
+      Archived instruments will be served only in those places:
+
+      - Reporting
+
+          - Orders
+
+          - Orders event
+
+          - Trades
+
+          - Operations
+
+      - Reporting API:
+
+          - vN/exchange.reporting/mp/orders
+
+          - vN/exchange.reporting/mp/trades
+
+
+      In all other APIs, archived instruments will not be served.
+
+      Prior to archiving an instrument, it must first be disabled, in case this instrument is a leg of a strategy, the parent must be archived prior to its legs.
+
+      #### Archive Instrument- Error Codes
+
+      | Code | Message |
+      | --- | --- |
+      | 1 | Exchange is unavailable |
+      | 100 | Missing or invalid parameter: \[FieldName\] |
+      | 101 | \[FieldName\] not found |
+      | 102 | Disable the instrument before attempting to archive it |
+      | 106 | Archiving strategy \[parentSymbol\] is required |
+      | 107  <br>Note: This validation will only take effect after the first update for that instrument | This instrument is underlying instrument of \[Derivative Symbol\] |
+      | 10001 | Permission denied |
+  Create_Instrument_Group:
+    summary: Create Instrument Group
+    description: |-
+      This API allows to create a new instrument Group.
+
+      An id will be returned in the response, this id is the unique identifier of the instrument group and should be used when sending update commands.
+
+      Note: This id can be retrieved via Get Instrument Groups API.
+
+      #### Create Instrument Group - Error Codes
+
+      | Code | Message |
+      | --- | --- |
+      | 1 | System is unavailable |
+      | 100 | Missing or invalid parameter: \[FieldName\] |
+      | 101 | Number of hierarchy levels should be <= 3 |
+      | 101 | Not allowed |
+      | 10001 | Permission denied |
+  Get_Instrument_Groups:
+    summary: Get Instrument Groups
+    description: This API allows to get all instrument group details.
+  Update_Instrument_Group:
+    summary: Update Instrument Group
+    description: |-
+      This API allows to update existing instrument group.
+
+      #### Update Instrument Group - Error Codes
+
+      All validations in create instrument group
+  Get_Instrument_Group:
+    summary: Get Instrument Group
+    description: This API allows to get a single instrument group details.
+  Create_Calendar:
+    summary: Create Calendar
+    description: |-
+      This API allows to create a new calendar.
+
+      ID will be returned in the response, this ID is the unique identifier of the calendar and should be used when sending update commands.
+
+      Note: this ID can be retrieved via Get Calendars API.
+
+      #### Create Calendar- Error Codes
+
+      | Code | Message |
+      | --- | --- |
+      | 1 | System is unavailable |
+      | 100 | Missing or invalid parameter: \[FieldName\] |
+      | 101 | Holiday date should not be sent twice |
+      | 101 | Wrong holiday close time |
+      | 101 | name already exists |
+      | `NEW v1.33.0`  <br>101 | IOC TIF is allowed only for Equilibrium Price |
+      | `NEW v1.35.0`  <br>101 | AutoResume auction is required by \[CBRName\] CBR |
+      | 10001 | Permission denied |
+      | 10005 | Not found |
+      | 20000 | Calendar Name already exists |
+      | 20001 | Wrong format |
+      | 20002 | Wrong format |
+
+      #### Auction - Error Codes
+
+      | Code | Message |
+      | --- | --- |
+      | 1 | System is unavailable |
+      | 100 | Missing or invalid parameter: \[FieldName\] |
+      | 101 | Auction start must be after previous auction end |
+      | 101 | randomEndTime / 2 must be less than duration |
+      | 101 | Wrong duration and randomEndTime |
+      | \[REMOVED 1.42.0\]~~  <br>101~~ | ~~One side must contain single mpId~~ |
+      | 101 | \[fieldName\] is relevant only for timeBased auction |
+      | 101 | Only single auction can be configured with \[fieldName\] trigger |
+      | 101 | overrideReferencePrice can be True only for equilibrium price algorithm |
+      | 101 | AutoResume auction is required by \[CBRName\] CBR |
+      | 101 | IOC TIF is allowed only for Equilibrium Price |
+      | `NEW v1.38.0`  <br>102 | The auction duration in \[calendar\] is shorter than the minimum allowed duration |
+      | 10001 | Permission denied |
+      | 10005 | Not found |
+  Get_Calendars:
+    summary: Get Calendars
+    description: This API allows to get a list of all calendars with their details.
+  Update_Calendar:
+    summary: Update Calendar
+    description: |-
+      This API allows to update existing calendar.
+
+      #### Update Calendar- Error Codes
+
+      All validations in create calendar and the below
+
+      | Code | Message |
+      | --- | --- |
+      | 101 | \[FieldName\] not found |
+      | 101 | AutoResume auction is required by \[CBR.name\] |
+      | 10001 | Permission denied |
+      | 10005 | Not found |
+      | 20000 | Calendar Name already exists |
+      | 20001 | Wrong format |
+      | 20002 | Wrong format |
+  Get_Calendar:
+    summary: Get Calendar
+    description: This API allows to get a single calendar details.
+  End_Of_Day:
+    summary: End Of Day
+    description: |-
+      This API allows to trigger EOD for a specific calendar
+
+      #### End Of Day- Error Codes
+
+      | Code | Message |
+      | --- | --- |
+      | 1 | System is unavailable |
+      | 101 | \[FieldName\] not found |
+      | 102 | EOD is not allowed |
+      | 10001 | Permission denied |
+  Get_Accounts:
+    summary: Get Accounts
+    description: This API allows to get a list of all accounts with their details.
+  Create_Account:
+    summary: Create Account
+    description: |-
+      This API allows to create a new Account.
+
+      ID will be returned in the response, this ID is the unique identifier of the Account and should be used when sending update commands.
+
+      Note: this ID can be retrieved via Get Accounts API.
+
+      #### Create Account - Error Codes
+
+      | Code | Message |
+      | --- | --- |
+      | 1 | System is unavailable |
+      | 100 | Missing or invalid parameter: \[FieldName\] |
+      | 101 | \[FieldName\] not found  <br>  <br>Can’t Block the account when InProcess Transaction Requests exist |
+      | 102 | CHANGED 1.57.0  <br>~~\[FieldName\] already exists~~  <br>\[FieldName\] already exists for id: \[accountId\] |
+      | 10001 | Permission denied |
+  Get_Account:
+    summary: Get Account
+    description: This API allows to get a specific account details.
+  Update_Account:
+    summary: Update Account
+    description: |-
+      This API allows to update existing Account.
+
+      #### Update Account - Error Codes
+
+      All errors in Create Account section and the below:
+
+      | Code | Message |
+      | --- | --- |
+      | 100 | Can’t change Ledger Account when active \[EntityName\] exist |
+      | 101 | MP can’t be changed  <br>Account type can’t be changed |
+  Create_API_Key:
+    summary: Create API Key
+    description: |-
+      This API allows to create a new apiKey for a specific MP.
+      As a response system will generate pair of apiKey and secret key.
+
+      For your security, your API Secret will only be returned at the time it is created. If you lose it, you will need to delete your API key and set up a new one.
+
+      #### Error Codes
+
+      | Code | Message |
+      | --- | --- |
+      | 1 | System is unavailable |
+      | 100 | Missing or invalid parameter: \[FieldName\] |
+      | 101 | \[FieldName\] not found |
+      | 102 | label already exists |
+      | `(REMOVED v1.43.0)`  <br>60002 | Allowed and blocked instruments/`(NEW v1.42.0)` instrumentGroups can not be filled for a single apiKey |
+  Get_API_Keys:
+    summary: Get API Keys
+    description: This API allows to get a list of all apiKeys with their details for specific MP.
+  Update_API_Key:
+    summary: Update API Key
+    description: |-
+      This API allows to update an existing apiKey for a specific MP.
+
+      `secret` is being generated when apiKey is created and can never be changed.
+  Get_API_Key:
+    summary: Get API Key
+    description: This API allows to get a single apiKey details.
+  Delete_API_Key:
+    summary: Delete API Key
+    description: This API allows to delete existing apiKey.
+  Get_MPs:
+    summary: Get MPs
+    description: This API allows to get a list of all MPs with their details.
+  Create_MP:
+    summary: Create MP
+    description: |-
+      This API allows to create a new MP.
+
+      ID will be returned in the response, this ID is the unique identifier of the MP and should be used when sending update commands.
+
+      Note: this ID can be retrieved via Get MPs API.
+
+      #### Create MP- Error Codes
+
+      | Code | Message |
+      | --- | --- |
+      | 1 | System is unavailable |
+      | 100 | Missing or invalid parameter: \[FieldName\] |
+      | 102 | \[FieldName\] already exists |
+      | 10001 | Permission denied |
+  Get_MP:
+    summary: Get MP
+    description: This API allows to get a single MP details.
+  Update_MP:
+    summary: Update MP
+    description: |-
+      This API allows to update existing MP.
+
+      #### Update MP- Error Codes
+
+      All validations in create instrument and the below
+
+      | Code | Message |
+      | --- | --- |
+      | 101 | \[FieldName\] not found |
+  MP_Groups_Create_API_Key:
+    summary: Create API Key
+    description: Same error codes as for MP apiKeycreation
+  MP_Groups_Get_API_Keys:
+    summary: Get API Keys
+  MP_Groups_Update_API_Key:
+    summary: Update API Key
+    description: |-
+      This API allows to update an existing apiKey for a specific MP Group.
+
+      `secret` is being generated when apiKey is created and can never be changed.
+  MP_Groups_Delete_API_Key:
+    summary: Delete API Key
+  MP_Groups_Get_API_Key:
+    summary: Get API Key
+  Create_MP_Group:
+    summary: Create MP Group
+    description: |-
+      #### Create MP Group- Error Codes
+
+      | Code | Message |
+      | --- | --- |
+      | 1 | System is unavailable |
+      | 100 | Missing or invalid parameter: \[FieldName\] |
+      | 101 | \[FieldName\] not found |
+      | 102 | \[FieldName\] already exists |
+      | 10001 | Permission denied |
+  Get_MP_Groups:
+    summary: Get MP Groups
+  Update_MP_Group:
+    summary: Update MP Group
+    description: |-
+      #### Update MP Group- Error Codes
+
+      All validations in create instrument and the below
+
+      | Code | Message |
+      | --- | --- |
+      | 101 | \[FieldName\] not found |
+  Get_MP_Group:
+    summary: Get MP Group
+  Create_CBR:
+    summary: Create CBR
+    description: |-
+      This API allows to create a new CBR.
+
+      ID will be returned in the response, this ID is the unique identifier of the CBR and should be used when sending update commands.
+
+      Note: this ID can be retrieved via Get CBRs API.
+
+      #### Create CBR - Error Codes
+
+      | Code | Message |
+      | --- | --- |
+      | 1 | System is unavailable |
+      | 100 | Missing or invalid parameter: \[FieldName\] |
+      | `NEW v1.42.0`  <br>100 | Only one of instrumentIds and instrumentGroupIds is allowed |
+      | 101 | \[FieldName\] not found |
+      | 102 | name already exists |
+      | `REMOVED v1.37`  <br>`NEW v1.35.0` ~~104~~ | ~~The calendar was copied successfully with the auctions from original calendar~~ |
+      | `NEW v1.35.0` 104 | only Resume Auction is allowed for this CBR type |
+      | `NEW v1.35.0` 104 | AutoResume auction needs to be configured with override reference price |
+      | 105 | Priority \[value\] already exists |
+      | `NEW v1.58.0` 2001 | You can send up to 750 instruments per request |
+      | 10001 | Permission denied |
+  Get_CBRs:
+    summary: Get CBRs
+    description: This API allows to get CBRs details.
+  Update_CBR:
+    summary: Update CBR
+    description: |-
+      This API allows to update existing CBR.
+
+      #### Update CBR - Error Codes
+
+      All validations in create CBR
+
+      | **Code** | Message |
+      | --- | --- |
+      | 101 | \[FieldName\] not found |
+      | 10001 | Permission denied |
+  Get_CBR:
+    summary: Get CBR
+    description: This API allows to get a single CBR details.
+  Create_TickSize:
+    summary: Create TickSize
+    description: |-
+      This API allows to create a new TickSize.
+
+      ID will be returned in the response, this ID is the unique identifier of the TickSize and should be used when sending update commands.
+
+      Note: this ID can be retrieved via Get TickSizes API.
+
+      #### Create TickSize- Error Codes
+
+      | Code | Message |
+      | --- | --- |
+      | 1 | System is unavailable |
+      | 100 | Missing or invalid parameter: \[FieldName\] |
+      | 101 `new` | Max number of ticksizes (items) is 25 |
+      | 102 | name already exists |
+      | 10001 | Permission denied |
+  Get_TickSizes:
+    summary: Get TickSizes
+    description: This API allows to get TickSizes details.
+  Update_TickSize:
+    summary: Update TickSize
+    description: |-
+      This API allows to update existing TickSize.
+
+      #### Update TickSize - Error Codes
+
+      All validations in create TickSize and the below
+
+      | Code | Message |
+      | --- | --- |
+      | 101 | \[FieldName\] not found |
+      | 10001 | Permission denied |
+      | 10004 | Wrong format |
+      | 2605 | \[FieldName\] must be less than maxLong/10^ pricePrecision for \[Instrument\] |
+      | 2603 | \[fieldValue\] is not allowed as price precision is \[lowestinstrumentPricePrecision\] for \[Instrument\]  <br> |
+  Get_TickSize:
+    summary: Get TickSize
+    description: This API allows to get a single TickSize details.
+  Place_Order:
+    summary: Place Order
+    description: |-
+      Place Order API allows you to place an order for mp
+
+      For more details about place order - see [here](https://docs.exberry.io/ws/trading-api#placeorder)
+
+      #### Place Order - Error Codes
+
+      1. Validations: same as [place order](https://docs.google.com/document/d/1N_7UEglP8s6hNV9ZeE5MN2NWdpJw-phRbo8Pk3qW2Go/edit#bookmark=id.gsv875ykqvln), with the below changes:
+
+          1. Skip validations 1007 & 1008 & 1011 (Authentication related)
+
+      2. Additional validation:
+
+
+      | Code | Message |
+      | --- | --- |
+      | 100 | Missing or invalid parameter: \[FieldName\] |
+      | 10001 | Permission denied |
+  Cancel_Order:
+    summary: Cancel Order
+    description: |-
+      Cancel Order API allows you to cancel order
+
+      #### Cancel Order - Error Codes
+
+      | Code | Message |
+      | --- | --- |
+      | 1 | System is unavailable |
+      | 100 | Missing or invalid parameter: \[FieldName\] |
+      | 101 | \[FieldName\] not found |
+      | 102 | Trading is not allowed during crossing |
+      | 102 | Instrument trading is not allowed |
+      | 102 | Market is closed |
+      | 102 | Instrument trading is halt |
+      | 101 | Not allowed |
+      | 108 | Cancellation of implied order is not allowed |
+      | 10001 | Permission denied |
+  Replace_Order:
+    summary: Replace Order
+    description: |-
+      Replace Order API allows you to replace an order for mp.
+
+      For more details about replace order - see [here](https://docs.exberry.io/ws/trading-api#replaceorder)
+
+      #### Relace Order - Error Codes
+
+      1. Validations: same as [replaceOrder](https://docs.exberry.io/ws/trading-api#replaceorder), with the below changes:
+
+          1. Skip validations 1007 & 1008 &1011 (Authentication related)
+
+      2. Additional validations:
+
+
+      | Code | Message |
+      | --- | --- |
+      | 10001 | Permission denied |
+      | 108 | Changes to the implied orders are not allowed |
+  Mass_Cancel:
+    summary: Mass Cancel
+    description: |-
+      Mass Cancel API allows you to mass cancel pending activity per request criteria:
+
+      Request Parameters
+
+      #### Mass Cancel- Error Codes
+
+      | Code | Message |
+      | --- | --- |
+      | 2001 | Wrong action |
+      | 2001 | Wrong instrumentIds |
+      | 2401 | Wrong instrumentId: \[instrumentId\] |
+      | 403 | Permission denied |
+  Trade_Entry:
+    summary: Trade Entry
+    description: |-
+      Trade Entry API allows you to capture trade that was done out of the order book
+
+      #### Trade Entry- Error Codes
+
+      | Code | Message |
+      | --- | --- |
+      | 1 | System is unavailable |
+      | 100 | Missing or invalid parameter: \[FieldName\] |
+      | 100 | Trade \[FieldName\] must be less than \[maxLong/10^ fieldPrecision |
+      | 100 | Trade \[FieldName\] must be above than \[minLong/10^ fieldPrecision\] |
+      | 101 | \[FieldName\] not found |
+      | 102 | Currently not allowed |
+      | 102 | Trading is not allowed during auction call |
+      | 102 | Trading is not allowed during crossing |
+      | 102 | Instrument trading is not allowed |
+      | 102 | Price precision is\[PricePrecision\] |
+      | 102 | Quantity precision is\[QuantityPrecision\] |
+      | 102 | Minimum trade quantity is \[MinQuantity\] |
+      | 102 | MinQuantity = max( minQuantity,  <br>minQuantityTradeEntry.amount) |
+      | 102 | Maximum trade quantity is \[MaxQuantity\] |
+      | 102 | Quantity increment is \[quantityIncrement\] |
+      | 102 | Instrument trading is halted |
+      | 102 | Price breaches \[FieldName\] of \[FieldValue\] (NEW v1.56.0) \[Optional Text\]  <br>  <br>_(NEW v1.56.0)  <br>_\[Optional Text\] = Price Band \[Value\]\[Type\], Reference Price: \[RefPrice\] , returned only in case of dynamic/ static price bands and not in case of leg price bands or instrument min/ max price bands |
+      | 102 | Maximum value is \[maxOrderValue\] |
+      | 102 | Price tick size is \[tickSize\] |
+      | 102 | Trading is not allowed |
+      | 102 | Missing position account |
+      | `(NEW v1.56.0)`  <br>113 | Not supported |
+      | 10001 | Permission denied |
+  Trade_Cancellation:
+    summary: Trade Cancellation
+    description: |-
+      Trade Cancellation API allows you to cancel a trade
+
+      #### Trade Cancellation- Error Codes
+
+      | Code | Message |
+      | --- | --- |
+      | 1 | System is unavailable |
+      | 100 | Missing or invalid parameter: \[FieldName\] |
+      | 101 | \[FieldName\] not found |
+      | 102 | Currently not allowed |
+      | 102 | Instrument trading is not allowed |
+      | 105 | Cancelation failed, trade is already canceled or from previous days or is leg trade |
+      | 10001 | Permission denied |
+  Trade_Adjustment:
+    summary: Trade Adjustment
+    description: |-
+      Trade Adjustment allows to change the price of a trade
+
+      #### Trade Adjustment- Error Codes
+
+      | Code | Message |
+      | --- | --- |
+      | 1 | System is unavailable |
+      | 100 | Missing or invalid parameter: \[FieldName\] |
+      | 101 | \[FieldName\] not found |
+      | 102 | Currently not allowed |
+      | 102 | Instrument trading is not allowed |
+      | 102 | Trading is not allowed during auction call |
+      | 102 | Trading is not allowed during crossing |
+      | 102 | Price precision is\[PricePrecision\] |
+      | 102 | Quantity precision is\[QuantityPrecision\] |
+      | 102 | Instrument trading is halted |
+      | 102 | Price breaches \[FieldName\] of \[FieldValue\] |
+      | 102 | Maximum value is \[maxOrderValue\] |
+      | 102 | Price tick size is \[tickSize\] |
+      | 102 | Trading is not allowed |
+      | 102 | Request failed, strategy leg configuration has changed |
+      | 105 | Request failed, trade is already canceled or from previous days or is leg trade |
+      | 105 | Implied order trades can’t be adjusted |
+      | 111 | Not allowed when LEDGER is enabled |
+      | 10001 | Permission denied |
+  Apply_Cash_Distribution:
+    summary: Apply Cash Distribution
+    description: |-
+      Apply Cash Distribution API allows you to adjust active orders and current market data fields(not historical) in case of a Corporate Actions that results cash distributions (such as cash dividend).
+
+      #### Error Codes
+
+      | Code | Message |
+      | --- | --- |
+      | 1 | System is unavailable |
+      | 10001 | Permission denied |
+      | 100 | Missing or invalid parameter: \[FieldName\] |
+      | 100 | \[FieldName\] must be ≤ \[maxLong/10^ fieldPrecision\] |
+      | 100 | \[FieldName\] must be ≥ \[minLong/10^ fieldPrecision\] |
+      | 102 | Instrument trading is not allowed |
+      | 102 | Trading is not allowed during auction call |
+      | 102 | Trading is not allowed during crossing |
+      | 102 | Instrument should be halted when market is open |
+      | 102 | Apply Cash Distribution is not allowed when there is no Closing Price |
+  Apply_Security_Distribution:
+    summary: Apply Security Distribution
+    description: |-
+      Apply Security Distribution API allows you to adjust active orders and current market data fields(not historical) in case of a Corporate Actions that results security distributions (such as stock dividend).
+
+      #### **Response:**
+
+      Same as Apply Cash Distribution
+
+      #### Error Codes
+
+      Same as Apply Cash Distribution with below exceptions
+
+      | Code | Message |
+      | --- | --- |
+      | 102 | Apply Cash Distribution is not allowed when there is no Closing Price  <br>  <br>Not applicable to Apply Security Distribution |
+  Get_Candle_Adjustments:
+    summary: Get Candle Adjustments
+    description: |-
+      Get Candle Adjustments API allows you to retrieve the historical market data adjustment factors related to Corporate Actions at instrument level.
+
+      #### Error Codes
+
+      Same as Update Candle Adjustments
+  Update_Candle_Adjustments:
+    summary: Update Candle Adjustments
+    description: |-
+      Update Candle Adjustments API allows you to create/update the historical market data adjustment factors related to Corporate Actions at instrument level.
+
+      #### **Response:**
+
+      No response body
+
+      #### Error Codes
+
+      | Code | Message |
+      | --- | --- |
+      | 1 | System is unavailable |
+      | 10001 | Permission denied |
+      | 100 | Missing or invalid parameter: \[FieldName\] |
+      | 101 | \[FieldName\] must be ≤ \[maxLong/10^ fieldPrecision\] |
+  Delete_Candle_Adjustments:
+    summary: Delete Candle Adjustments
+    description: |-
+      Delete Candle Adjustments API allows you to delete the historical market data adjustment factors related to Corporate Actions at instrument level.
+
+      #### **Response:**
+
+      No response body
+
+      #### Error Codes
+
+      | Code | Message |
+      | --- | --- |
+      | 1 | System is unavailable |
+      | 10001 | Permission denied |
+      | 100 | Missing or invalid parameter: \[FieldName\] |
+  Set_Settlement_Price:
+    summary: Set Settlement Price
+    description: |-
+      Set Settlement Price API allows you to set settlement price for an instrument
+
+      #### Set Settlement Prices - Error Codes
+
+      | Code | Message |
+      | --- | --- |
+      | 1 | Exchange is unavailable |
+      | 100 | Missing or invalid parameter: \[FieldName\] |
+      | 101 | instrumentId not found |
+      | 102 | Currently not allowed |
+      | 10001 | Permission denied |
+  Set_Tick_Reference_Price:
+    summary: Set Tick Reference Price
+    description: |-
+      Set Tick Reference Price API allows you to set Tick Reference Price for an instrument
+
+      #### Tick Reference Price - Error Codes
+
+      | Code | Message |
+      | --- | --- |
+      | 1 | Exchange is unavailable |
+      | 100 | Missing or invalid parameter: \[FieldName\] |
+      | 101 | instrumentId not found |
+      | 10001 | Permission denied |
+  Trading_Halt:
+    summary: Trading Halt
+    description: |-
+      Trading Halt API allows you to halt the trading for a:
+
+      - List of instrument
+
+      - List of instrument groups
+
+      - All instruments
+
+      - Multiple filtered instruments, see [here](https://documenter.getpostman.com/view/6229811/TzCV3jcq#c1b23770-4cc1-41b0-a035-15f3e280bbe4) for more details
+
+
+      #### Schedule Halt and Resume CHANGED 1.57.0
+
+      1. When the request sets a halt, it is allowed to specify halt at explicit time as well as the explicit resumption time. If not defind, action is immediate. When scheduling resume, a time gap extension instead of an explicit time can be defined.
+
+      2. Examples:
+
+          1. Now it's 14:00 and a user clicks on halt with a time interval of 10 minutes, trading will resume at 14:10.
+
+          2. In addition to the previous example, at 14:07 the user again clicks on halt with a time interval of 5 minutes, trading will resume at 14:15 (14:10 plus the 5 minutes from the latest request).
+
+
+      **Behavior Summary**
+
+      1. Scheduled Resume can be triggered by one of the below:
+
+          1. CBR: Triggered by CBR
+
+          2. Regular: Triggered by operator (via time interval or explicit time)
+
+
+      | New Request | Existing Timers | Behavior |
+      | --- | --- | --- |
+      | Halt Without Scheduled Resume  <br>  <br>OR  <br>Halt & Scheduled Resume With Explicit Time  <br>  <br>OR  <br>Immediate Resume  <br>  <br>OR  <br>Scheduled Halt  <br>  <br>OR  <br>Scheduled Halt & Scheduled Resume | Scheduled Halt  <br>with/ without any Scheduled Resume  <br>  <br>OR  <br>Scheduled Resume | Drop existing schedule and apply the new command |
+      | Halt & Scheduled Resume with Time Interval | Scheduled Resume Regular | Interval of the new request will be added to the original Scheduled Resume time. |
+      | Halt & Scheduled Resume with Time Interval | Scheduled CBR Resume  <br>OR  <br>Scheduled Halt  <br>with/ without any Scheduled Resume | Drop existing schedule and apply the new command |
+      | CBR Halt with/without Resume | Scheduled Halt  <br>with/ without Scheduled Resume  <br>OR  <br>Scheduled Resume | Doesn’t drop existing scheduled halts/resumes and halts immediately and schedule new resume (if applicable) |
+
+      #### Trading Halt - Error Codes
+
+      | Code | Message |
+      | --- | --- |
+      | 2001 | Wrong action |
+      | 2001 | Wrong instrumentIds |
+      | 2002 | \[FieldName\] must be in future |
+      | 2003 | Only one of scheduleResumeTime and scheduleResumeTimeInterval is allowed |
+      | 2401 | Wrong instrumentId: \[instrumentId\] |
+      | 2401 | Wrong instrumentGroupIds: \[instrumentGroupId\] |
+      | 403 | Permission denied |
+      | 201 | You can send up to 750 instruments per request |
+  Trading_Resume:
+    summary: Trading Resume
+    description: |-
+      Trading Resume API allows you to resume the trading for a:
+
+      - List of instrument
+
+      - List of instrument groups
+
+      - All instruments
+
+      - Multiple filtered instruments, see [here](https://documenter.getpostman.com/view/6229811/TzCV3jcq#c1b23770-4cc1-41b0-a035-15f3e280bbe4) for more details
+
+
+      #### Trading Resume - Error Codes
+
+      | Code | Message |
+      | --- | --- |
+      | 2001 | Wrong action |
+      | 2001 | Wrong instrumentIds |
+      | 2001 | Wrong \[FieldName\] |
+      | 2401 | Wrong instrumentId: \[instrumentId\] |
+      | 2401 | Wrong instrumentGroupIds: \[instrumentGroupId\] |
+      | 403 | Permission denied |
+      | 201 | You can send up to 750 instruments per request |
+  Set_News:
+    summary: Set News
+    description: |-
+      New v1.50.0
+
+      Set News API allows you to submit news to the system
+
+      #### Set News - Error Codes
+
+      | Code | Message |
+      | --- | --- |
+      | 1 | Exchange is unavailable |
+      | 100 | Missing or invalid parameter: \[FieldName\] |
+      | 10001 | Permission denied |
 schema_descriptions:
-  Instrument.properties.symbol: |-
-    Unique instrument symbol. Max length 16. Allowed characters: a-Z, 0-9, - . ^ = /
+  Instrument.properties.symbol: 'Unique instrument symbol. Max length 16. Allowed characters: a-Z, 0-9, - . ^ = /'
