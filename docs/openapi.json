@@ -279,6 +279,38 @@
           "timeZone"
         ]
       },
+      "CandleAdjustment": {
+        "type": "object",
+        "properties": {
+          "instrumentId": {
+            "type": "string",
+            "pattern": "^-?[0-9]+$",
+            "description": "Instrument ID to apply the cash distribution"
+          },
+          "exDate": {
+            "type": "string",
+            "format": "date",
+            "description": "Ex-date of the corporate action \nformat YYYY-MM-DD"
+          },
+          "price": {
+            "type": "string",
+            "format": "decimal",
+            "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
+            "description": "The adjustment factor applicable to price related market data values prior to the exDate \nprice or quantity is required"
+          },
+          "quantity": {
+            "type": "string",
+            "format": "decimal",
+            "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
+            "description": "The adjustment factor applicable to quantity related market data values prior to the exDate \nprice or quantity is required"
+          }
+        },
+        "description": "Historical market data adjustment factor related to a Corporate Action, at instrument level.",
+        "required": [
+          "instrumentId",
+          "exDate"
+        ]
+      },
       "CircuitBreakerRule": {
         "type": "object",
         "properties": {
@@ -510,12 +542,14 @@
           "startDate": {
             "type": "integer",
             "format": "int64",
-            "description": "Mandatory if Category = O (option) OR F (Futures) \nUsed for derivatives, trading is allowed from this time. \nBefore this time, marketStatus is in Closed state without changing as per the calendar."
+            "x-epoch-unit": "seconds",
+            "description": "Mandatory if Category = O (option) OR F (Futures) \nUsed for derivatives, trading is allowed from this time. \nBefore this time, marketStatus is in Closed state without changing as per the calendar. — Unix epoch time in seconds"
           },
           "stopDate": {
             "type": "integer",
             "format": "int64",
-            "description": "Mandatory if Category = O (option) OR F (Futures) \nUsed for derivatives, trading is allowed up to this time. \nAt this time all active orders are being cancelled. \nSee tradingCutoffs for instrument expiration details \nAt this time marketStatus changes to Closed and remains in the same state without changing as per the calendar."
+            "x-epoch-unit": "seconds",
+            "description": "Mandatory if Category = O (option) OR F (Futures) \nUsed for derivatives, trading is allowed up to this time. \nAt this time all active orders are being cancelled. \nSee tradingCutoffs for instrument expiration details \nAt this time marketStatus changes to Closed and remains in the same state without changing as per the calendar. — Unix epoch time in seconds"
           },
           "tradingCutoffs": {
             "type": "array",
@@ -529,7 +563,8 @@
                 "timestamp": {
                   "type": "integer",
                   "format": "int64",
-                  "description": "Cutoff time for trade reporting of the type defined in the ‘type’ field. \nInstrument status changed to be Disabled at the latest cutoff. (considering also the stopDate) \nIf not defined, stopDate will be the cutoff time for trade types not defined. \nApplicable to any Trade entry"
+                  "x-epoch-unit": "seconds",
+                  "description": "Cutoff time for trade reporting of the type defined in the ‘type’ field. \nInstrument status changed to be Disabled at the latest cutoff. (considering also the stopDate) \nIf not defined, stopDate will be the cutoff time for trade types not defined. \nApplicable to any Trade entry — Unix epoch time in seconds"
                 }
               }
             },
@@ -688,7 +723,8 @@
           },
           "bidAskTickRefPrice": {
             "type": "boolean",
-            "description": "true = System considers best Bid/best Ask when calculating tickReferencePrice \nfalse = best Bid/best Ask is not considered (deafult)"
+            "default": false,
+            "description": "- true: System considers best Bid/best Ask when calculating tickReferencePrice \n- false: best Bid/best Ask is not considered (default)"
           },
           "coupon": {
             "type": "integer",
@@ -777,6 +813,24 @@
           "maxQuantity",
           "activityStatus",
           "description"
+        ],
+        "x-mutually-exclusive": [
+          [
+            "dailyMaxPriceAbsolute",
+            "dailyMaxPricePercentage"
+          ],
+          [
+            "dailyMinPriceAbsolute",
+            "dailyMinPricePercentage"
+          ],
+          [
+            "tickMaxPriceAbsolute",
+            "tickMaxPricePercentage"
+          ],
+          [
+            "tickMinPriceAbsolute",
+            "tickMinPricePercentage"
+          ]
         ]
       },
       "InstrumentCategory": {
@@ -943,6 +997,7 @@
           },
           "selfTradePrevention": {
             "type": "boolean",
+            "default": false,
             "description": "Determines whether self Trade Prevention is allowed for this MP or not. \nIf not sent then it is considered as false"
           },
           "selfTradeAction": {
@@ -1000,13 +1055,63 @@
           "permissions": {
             "type": "array",
             "items": {
-              "type": "string"
+              "type": "string",
+              "enum": [
+                "market-service:market:market_data",
+                "market-service:market:order_book_depth",
+                "market-service:market:order_book_state",
+                "market-service:market:place_order",
+                "market-service:market:cancel_order",
+                "market-service:market:modify_order",
+                "market-service:market:replace_order",
+                "market-service:market:mass_cancel",
+                "market-service:market:submit_rfq",
+                "market-service:market:cancel_rfq",
+                "market-service:market:submit_rfq_quotes",
+                "market-service:market:cancel_rfq_quotes",
+                "market-service:market:accept_rfq_quotes",
+                "market-service:market:create_trade_report",
+                "market-service:market:cancel_alleged_trade_report",
+                "market-service:market:mass_cancel_multiple_instruments",
+                "market-service:market:execution_reports",
+                "market-service:market:mass_order_status",
+                "market-service:market:trades",
+                "reporting:mp:orders",
+                "reporting:mp:trades",
+                "reporting:mp:rfqs",
+                "reporting:mp:rfq_quotes"
+              ],
+              "x-enumDescriptions": {
+                "market-service:market:market_data": "FIX Market Data (Market Data group)",
+                "market-service:market:order_book_depth": "Real Time Market Data (Market Data group)",
+                "market-service:market:order_book_state": "Market Data Snapshot (Market Data group)",
+                "market-service:market:place_order": "Place Order (CLOB Trading group)",
+                "market-service:market:cancel_order": "Cancel Order (CLOB Trading group)",
+                "market-service:market:modify_order": "Modify Order (CLOB Trading group)",
+                "market-service:market:replace_order": "Replace Order (CLOB Trading group)",
+                "market-service:market:mass_cancel": "Mass Cancel Single Instrument (Mass Cancellation group)",
+                "market-service:market:submit_rfq": "Submit RFQ (RFQ Trading group)",
+                "market-service:market:cancel_rfq": "Cancel RFQ (RFQ Trading group)",
+                "market-service:market:submit_rfq_quotes": "Submit RFQ Quotes (RFQ Trading group)",
+                "market-service:market:cancel_rfq_quotes": "Cancel RFQ Quotes (RFQ Trading group)",
+                "market-service:market:accept_rfq_quotes": "Accept RFQ Quotes (RFQ Trading group)",
+                "market-service:market:create_trade_report": "Create Trade Report (Trade Reporting group)",
+                "market-service:market:cancel_alleged_trade_report": "Cancel Alleged Trade Report (Trade Reporting group)",
+                "market-service:market:mass_cancel_multiple_instruments": "Mass Cancel Multiple Instruments (Mass Cancellation group)",
+                "market-service:market:execution_reports": "Execution Reports (Drop Copy group)",
+                "market-service:market:mass_order_status": "Mass Order Status (Drop Copy group)",
+                "market-service:market:trades": "Trades (Drop Copy group)",
+                "reporting:mp:orders": "Orders History (Reporting group)",
+                "reporting:mp:trades": "Trades History (Reporting group)",
+                "reporting:mp:rfqs": "RFQs History (Reporting group)",
+                "reporting:mp:rfq_quotes": "RFQ Quotes History (Reporting group)"
+              }
             },
-            "description": "Permissions grantted for the apiKey. A table of available values is listed below"
+            "description": "Permissions granted for the apiKey:\n\n- `market-service:market:market_data`: FIX Market Data (Market Data group)\n- `market-service:market:order_book_depth`: Real Time Market Data (Market Data group)\n- `market-service:market:order_book_state`: Market Data Snapshot (Market Data group)\n- `market-service:market:place_order`: Place Order (CLOB Trading group)\n- `market-service:market:cancel_order`: Cancel Order (CLOB Trading group)\n- `market-service:market:modify_order`: Modify Order (CLOB Trading group)\n- `market-service:market:replace_order`: Replace Order (CLOB Trading group)\n- `market-service:market:mass_cancel`: Mass Cancel Single Instrument (Mass Cancellation group)\n- `market-service:market:submit_rfq`: Submit RFQ (RFQ Trading group)\n- `market-service:market:cancel_rfq`: Cancel RFQ (RFQ Trading group)\n- `market-service:market:submit_rfq_quotes`: Submit RFQ Quotes (RFQ Trading group)\n- `market-service:market:cancel_rfq_quotes`: Cancel RFQ Quotes (RFQ Trading group)\n- `market-service:market:accept_rfq_quotes`: Accept RFQ Quotes (RFQ Trading group)\n- `market-service:market:create_trade_report`: Create Trade Report (Trade Reporting group)\n- `market-service:market:cancel_alleged_trade_report`: Cancel Alleged Trade Report (Trade Reporting group)\n- `market-service:market:mass_cancel_multiple_instruments`: Mass Cancel Multiple Instruments (Mass Cancellation group)\n- `market-service:market:execution_reports`: Execution Reports (Drop Copy group)\n- `market-service:market:mass_order_status`: Mass Order Status (Drop Copy group)\n- `market-service:market:trades`: Trades (Drop Copy group)\n- `reporting:mp:orders`: Orders History (Reporting group)\n- `reporting:mp:trades`: Trades History (Reporting group)\n- `reporting:mp:rfqs`: RFQs History (Reporting group)\n- `reporting:mp:rfq_quotes`: RFQ Quotes History (Reporting group)"
           },
           "cancelOnDisconncet": {
             "type": "boolean",
-            "description": "true - when there is disconnection all resting orders, active Quotes and active Alleged Trades are canceled \nNote: The field can set to be true only when \"market-service:market:place_order\" OR \"market-service:market:submit_rfq_quotes\" OR \"market-service:market:create_trade_report\" permission is included"
+            "description": "- true: when there is disconnection all resting orders, active Quotes and active Alleged Trades are canceled \nNote: The field can set to be true only when \"market-service:market:place_order\" OR \"market-service:market:submit_rfq_quotes\" OR \"market-service:market:create_trade_report\" permission is included"
           },
           "allowedInstrumentGroupIds": {
             "type": "array",
@@ -1065,6 +1170,38 @@
         "allOf": [
           {
             "$ref": "#/components/schemas/MpApiKey"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "permissions": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "enum": [
+                    "market-service:market:market_data",
+                    "market-service:market:order_book_depth",
+                    "market-service:market:order_book_state",
+                    "market-service:market:execution_reports",
+                    "market-service:market:mass_order_status",
+                    "market-service:market:trades",
+                    "reporting:mp:orders",
+                    "reporting:mp:trades"
+                  ],
+                  "x-enumDescriptions": {
+                    "market-service:market:market_data": "FIX Market Data (Market Data group)",
+                    "market-service:market:order_book_depth": "Real Time Market Data (Market Data group)",
+                    "market-service:market:order_book_state": "Market Data Snapshot (Market Data group)",
+                    "market-service:market:execution_reports": "Execution Reports (Drop Copy group)",
+                    "market-service:market:mass_order_status": "Mass Order Status (Drop Copy group)",
+                    "market-service:market:trades": "Trades (Drop Copy group)",
+                    "reporting:mp:orders": "Orders History (Reporting group)",
+                    "reporting:mp:trades": "Trades History (Reporting group)"
+                  }
+                },
+                "description": "Subset of the MP API key permissions available for MP Group keys:\n\n- `market-service:market:market_data`: FIX Market Data (Market Data group)\n- `market-service:market:order_book_depth`: Real Time Market Data (Market Data group)\n- `market-service:market:order_book_state`: Market Data Snapshot (Market Data group)\n- `market-service:market:execution_reports`: Execution Reports (Drop Copy group)\n- `market-service:market:mass_order_status`: Mass Order Status (Drop Copy group)\n- `market-service:market:trades`: Trades (Drop Copy group)\n- `reporting:mp:orders`: Orders History (Reporting group)\n- `reporting:mp:trades`: Trades History (Reporting group)"
+              }
+            }
           }
         ],
         "description": "API key attached to an MP Group. Structurally identical to MpApiKey, with two differences: it is scoped to an MP Group (groupId path parameter) instead of a single MP (mpId), and the set of allowed permissions is a subset of the MP API key permissions."
@@ -1583,7 +1720,7 @@
         ],
         "responses": {
           "200": {
-            "description": "Success With Filters",
+            "description": "Successful response",
             "content": {
               "application/json": {
                 "schema": {
@@ -1600,52 +1737,119 @@
                     }
                   }
                 },
-                "example": {
-                  "totalCount": "3",
-                  "instruments": [
-                    {
-                      "id": "24155",
-                      "symbol": "INS",
-                      "calendarId": "10",
-                      "activityStatus": "DISABLED",
-                      "minQuantity": "0.1",
-                      "maxQuantity": "999999",
-                      "pricePrecision": "10",
-                      "quantityPrecision": "10",
-                      "description": "test",
-                      "quoteCurrency": "USD",
-                      "auctions": [],
-                      "tradingModels": [
-                        "CLOB"
-                      ],
-                      "minQuantityTradeEntries": [
+                "examples": {
+                  "Success": {
+                    "summary": "Success",
+                    "value": {
+                      "totalCount": "3",
+                      "instruments": [
                         {
-                          "type": "EFRP",
-                          "amount": "10"
+                          "id": "123",
+                          "symbol": "INS1",
+                          "calendarId": "123",
+                          "activityStatus": "DISABLED",
+                          "minQuantity": "1",
+                          "maxQuantity": "99999",
+                          "pricePrecision": "1",
+                          "quantityPrecision": "1",
+                          "description": "test",
+                          "quoteCurrency": "USD",
+                          "auctions": [],
+                          "startDate": "1668604393",
+                          "stopDate": "1668690796",
+                          "category": "K",
+                          "underlyingInstrumentId": "20",
+                          "deliveryType": "P",
+                          "contractSize": "1",
+                          "strategyType": "SPREAD",
+                          "leg1ReferencePrice": "10",
+                          "legsInstrumentIds": [
+                            "20",
+                            "1013"
+                          ],
+                          "tradingModels": [
+                            "CLOB"
+                          ]
                         },
                         {
-                          "type": "Block",
-                          "amount": "5"
+                          "id": "1234",
+                          "symbol": "INS2",
+                          "calendarId": "123",
+                          "activityStatus": "DISABLED",
+                          "minQuantity": "1",
+                          "maxQuantity": "9999",
+                          "pricePrecision": "1",
+                          "quantityPrecision": "2",
+                          "description": "test1",
+                          "quoteCurrency": "USE",
+                          "startDate": "1675515807",
+                          "stopDate": "1675688623",
+                          "category": "O",
+                          "subCategory": "C",
+                          "underlyingAssets": "O",
+                          "underlyingInstrumentId": "1013",
+                          "deliveryType": "P",
+                          "contractSize": "2",
+                          "expiryDate": "2023-02-25",
+                          "strike": "6",
+                          "exerciseType": "A",
+                          "tradingModels": [
+                            "CLOB"
+                          ]
                         }
                       ]
-                    },
-                    {
-                      "id": "24287",
-                      "symbol": "Test",
-                      "calendarId": "10",
-                      "activityStatus": "ACTIVE",
-                      "minQuantity": "0.0001",
-                      "maxQuantity": "10000000",
-                      "pricePrecision": "6",
-                      "quantityPrecision": "4",
-                      "description": "Testing instrument",
-                      "quoteCurrency": "USD",
-                      "auctions": [],
-                      "tradingModels": [
-                        "CLOB"
+                    }
+                  },
+                  "Success_With_Filters": {
+                    "summary": "Success With Filters",
+                    "value": {
+                      "totalCount": "3",
+                      "instruments": [
+                        {
+                          "id": "24155",
+                          "symbol": "INS",
+                          "calendarId": "10",
+                          "activityStatus": "DISABLED",
+                          "minQuantity": "0.1",
+                          "maxQuantity": "999999",
+                          "pricePrecision": "10",
+                          "quantityPrecision": "10",
+                          "description": "test",
+                          "quoteCurrency": "USD",
+                          "auctions": [],
+                          "tradingModels": [
+                            "CLOB"
+                          ],
+                          "minQuantityTradeEntries": [
+                            {
+                              "type": "EFRP",
+                              "amount": "10"
+                            },
+                            {
+                              "type": "Block",
+                              "amount": "5"
+                            }
+                          ]
+                        },
+                        {
+                          "id": "24287",
+                          "symbol": "Test",
+                          "calendarId": "10",
+                          "activityStatus": "ACTIVE",
+                          "minQuantity": "0.0001",
+                          "maxQuantity": "10000000",
+                          "pricePrecision": "6",
+                          "quantityPrecision": "4",
+                          "description": "Testing instrument",
+                          "quoteCurrency": "USD",
+                          "auctions": [],
+                          "tradingModels": [
+                            "CLOB"
+                          ]
+                        }
                       ]
                     }
-                  ]
+                  }
                 }
               }
             }
@@ -1810,35 +2014,124 @@
         ],
         "responses": {
           "200": {
-            "description": "Bond",
+            "description": "Successful response",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Instrument"
                 },
-                "example": {
-                  "id": "123456",
-                  "symbol": "bonds",
-                  "calendarId": "123",
-                  "activityStatus": "ACTIVE",
-                  "minQuantity": "1",
-                  "maxQuantity": "9999999",
-                  "pricePrecision": "1",
-                  "quantityPrecision": "1",
-                  "description": "Bonds test",
-                  "quoteCurrency": "USD",
-                  "startDate": "1682426640",
-                  "stopDate": "1682599440",
-                  "category": "D",
-                  "subCategory": "B",
-                  "underlyingAssets": "F",
-                  "coupon": "4",
-                  "periodOfCoupon": "ANNUAL",
-                  "accrualConvention": "ACT_ACT",
-                  "maturityDate": "2023-04-27",
-                  "tradingModels": [
-                    "CLOB"
-                  ]
+                "examples": {
+                  "Success": {
+                    "summary": "Success",
+                    "value": {
+                      "id": "12208",
+                      "symbol": "Test1",
+                      "calendarId": "5",
+                      "activityStatus": "ACTIVE",
+                      "minQuantity": "0.0001",
+                      "maxQuantity": "10000000",
+                      "pricePrecision": "6",
+                      "quantityPrecision": "4",
+                      "description": "Testing instrument V2",
+                      "quoteCurrency": "USD",
+                      "tradingModels": [
+                        "CLOB"
+                      ]
+                    }
+                  },
+                  "Success_with_optional_fields": {
+                    "summary": "Success with optional fields",
+                    "value": {
+                      "id": "12208",
+                      "symbol": "Test1",
+                      "calendarId": "5",
+                      "activityStatus": "ACTIVE",
+                      "minQuantity": "0.0001",
+                      "maxQuantity": "10000000",
+                      "pricePrecision": "6",
+                      "quantityPrecision": "4",
+                      "quantityIncrement": "1.2345",
+                      "minPrice": "1",
+                      "maxPrice": "99999",
+                      "maxOrderValue": "1000000",
+                      "maxDepth": "10000000",
+                      "description": "Testing instrument V2",
+                      "quoteCurrency": "USD",
+                      "startDate": "1676540506",
+                      "stopDate": "1677404523",
+                      "category": "F",
+                      "subCategory": "F",
+                      "underlyingAssets": "F",
+                      "cfi": "ABCDEF",
+                      "mic": "GGGg",
+                      "underlyingInstrumentId": "12140",
+                      "deliveryType": "P",
+                      "contractSize": "10",
+                      "dailyMinPricePercentage": "10",
+                      "dailyMaxPricePercentage": "15",
+                      "tickMinPricePercentage": "10",
+                      "tickMaxPricePercentage": "15",
+                      "deliveryStartDate": "2023-12-01",
+                      "deliveryEndDate": "2023-12-31",
+                      "minQuantityTradeEntries": [
+                        {
+                          "type": "EFRP",
+                          "amount": "5"
+                        },
+                        {
+                          "type": "Block",
+                          "amount": "5"
+                        }
+                      ],
+                      "tradingModels": [
+                        "CLOB",
+                        "RFQ"
+                      ],
+                      "tradingCutoffs": [
+                        {
+                          "type": "EFRP",
+                          "timestamp": "1820999860"
+                        }
+                      ],
+                      "maxRFQExpireTimePeriod": 6000,
+                      "applicablePriceBands": [
+                        {
+                          "priceBand": "DAILY_MIN_MAX",
+                          "tradingTypes": [
+                            "CLOB"
+                          ]
+                        }
+                      ],
+                      "bidAskTickRefPrice": true
+                    }
+                  },
+                  "Bond": {
+                    "summary": "Bond",
+                    "value": {
+                      "id": "123456",
+                      "symbol": "bonds",
+                      "calendarId": "123",
+                      "activityStatus": "ACTIVE",
+                      "minQuantity": "1",
+                      "maxQuantity": "9999999",
+                      "pricePrecision": "1",
+                      "quantityPrecision": "1",
+                      "description": "Bonds test",
+                      "quoteCurrency": "USD",
+                      "startDate": "1682426640",
+                      "stopDate": "1682599440",
+                      "category": "D",
+                      "subCategory": "B",
+                      "underlyingAssets": "F",
+                      "coupon": "4",
+                      "periodOfCoupon": "ANNUAL",
+                      "accrualConvention": "ACT_ACT",
+                      "maturityDate": "2023-04-27",
+                      "tradingModels": [
+                        "CLOB"
+                      ]
+                    }
+                  }
                 }
               }
             }
@@ -2657,59 +2950,89 @@
         ],
         "responses": {
           "200": {
-            "description": "Success with auctions",
+            "description": "Successful response",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Calendar"
                 },
-                "example": {
-                  "id": "5",
-                  "name": "Calendar",
-                  "timeZone": "+03:00",
-                  "marketOpen": "09:00",
-                  "marketClose": "19:00",
-                  "tradingDays": [
-                    "MONDAY",
-                    "TUESDAY"
-                  ],
-                  "holidays": [],
-                  "auctions": [
-                    {
-                      "days": [],
-                      "startTimes": [],
-                      "duration": "120000",
-                      "matchingAlgorithm": "PRICE_AND_TIME",
-                      "allowedTimeInForces": [
-                        "GTC",
-                        "GTD"
+                "examples": {
+                  "Success": {
+                    "summary": "Success",
+                    "value": {
+                      "id": "36491073",
+                      "tradingDays": [
+                        "MONDAY",
+                        "TUESDAY"
                       ],
-                      "eventsModes": [
-                        "LIT"
-                      ],
-                      "trigger": "Resume",
-                      "overrideReferencePrice": false
-                    },
-                    {
-                      "days": [
-                        "SUNDAY"
-                      ],
-                      "startTimes": [
-                        "17:00:00"
-                      ],
-                      "duration": "120000",
-                      "matchingAlgorithm": "EQUILIBRIUM_PRICE",
-                      "allowedTimeInForces": [
-                        "GTC",
-                        "GTD"
-                      ],
-                      "eventsModes": [
-                        "LIT"
-                      ],
-                      "trigger": "TimeBased",
-                      "overrideReferencePrice": true
+                      "name": "Test3",
+                      "timeZone": "-02:00",
+                      "marketOpen": "09:00",
+                      "marketClose": "17:00",
+                      "holidays": [
+                        {
+                          "date": "2022-01-01",
+                          "name": "New Year"
+                        },
+                        {
+                          "date": "2022-01-02",
+                          "closeTime": "13:00",
+                          "name": "Nice Holiday"
+                        }
+                      ]
                     }
-                  ]
+                  },
+                  "Success_with_auctions": {
+                    "summary": "Success with auctions",
+                    "value": {
+                      "id": "5",
+                      "name": "Calendar",
+                      "timeZone": "+03:00",
+                      "marketOpen": "09:00",
+                      "marketClose": "19:00",
+                      "tradingDays": [
+                        "MONDAY",
+                        "TUESDAY"
+                      ],
+                      "holidays": [],
+                      "auctions": [
+                        {
+                          "days": [],
+                          "startTimes": [],
+                          "duration": "120000",
+                          "matchingAlgorithm": "PRICE_AND_TIME",
+                          "allowedTimeInForces": [
+                            "GTC",
+                            "GTD"
+                          ],
+                          "eventsModes": [
+                            "LIT"
+                          ],
+                          "trigger": "Resume",
+                          "overrideReferencePrice": false
+                        },
+                        {
+                          "days": [
+                            "SUNDAY"
+                          ],
+                          "startTimes": [
+                            "17:00:00"
+                          ],
+                          "duration": "120000",
+                          "matchingAlgorithm": "EQUILIBRIUM_PRICE",
+                          "allowedTimeInForces": [
+                            "GTC",
+                            "GTD"
+                          ],
+                          "eventsModes": [
+                            "LIT"
+                          ],
+                          "trigger": "TimeBased",
+                          "overrideReferencePrice": true
+                        }
+                      ]
+                    }
+                  }
                 }
               }
             }
@@ -5775,6 +6098,59 @@
                       }
                     },
                     "description": "Similar to the trading API"
+                  },
+                  "expiryDate": {
+                    "type": "array",
+                    "items": {
+                      "type": "object"
+                    },
+                    "description": "Similar to the trading API"
+                  },
+                  "expiryDay": {
+                    "type": "string",
+                    "description": "Similar to the trading API"
+                  },
+                  "minQuantity": {
+                    "type": "string",
+                    "format": "decimal",
+                    "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
+                    "description": "Similar to the trading API"
+                  },
+                  "stopPrice": {
+                    "type": "string",
+                    "format": "decimal",
+                    "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
+                    "description": "Similar to the trading API"
+                  },
+                  "stpAction": {
+                    "type": "string",
+                    "description": "Similar to the trading API"
+                  },
+                  "displayMethod": {
+                    "type": "string",
+                    "description": "Similar to the trading API"
+                  },
+                  "displayQuantity": {
+                    "type": "string",
+                    "format": "decimal",
+                    "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
+                    "description": "Similar to the trading API"
+                  },
+                  "displayLowQuantity": {
+                    "type": "string",
+                    "format": "decimal",
+                    "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
+                    "description": "Similar to the trading API"
+                  },
+                  "displayHighQuantity": {
+                    "type": "string",
+                    "format": "decimal",
+                    "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
+                    "description": "Similar to the trading API"
+                  },
+                  "metadata": {
+                    "type": "string",
+                    "description": "Similar to the trading API"
                   }
                 },
                 "required": [
@@ -5876,6 +6252,18 @@
                   "orderId": {
                     "type": "integer",
                     "description": "the Id of the order we want to cancel"
+                  },
+                  "cancelReason": {
+                    "type": "string",
+                    "enum": [
+                      "CancelOrderOnBehalf",
+                      "CancelRequest",
+                      "CorporateAction"
+                    ],
+                    "x-enumDescriptions": {
+                      "CancelOrderOnBehalf": "default if nothing is sent"
+                    },
+                    "description": "Cancellation reason. (populated in the cancellation events)"
                   }
                 },
                 "required": [
@@ -5997,6 +6385,52 @@
                   "timeInForce": {
                     "type": "string",
                     "description": "Similar to the trading API"
+                  },
+                  "expiryDate": {
+                    "type": "string",
+                    "description": "Similar to the trading API"
+                  },
+                  "expiryDay": {
+                    "type": "string",
+                    "description": "Similar to the trading API"
+                  },
+                  "minQuantity": {
+                    "type": "string",
+                    "format": "decimal",
+                    "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
+                    "description": "Similar to the trading API"
+                  },
+                  "stopPrice": {
+                    "type": "string",
+                    "format": "decimal",
+                    "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
+                    "description": "Similar to the trading API"
+                  },
+                  "stpAction": {
+                    "type": "string",
+                    "description": "Similar to the trading API"
+                  },
+                  "displayQuantity": {
+                    "type": "string",
+                    "format": "decimal",
+                    "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
+                    "description": "Similar to the trading API"
+                  },
+                  "displayLowQuantity": {
+                    "type": "string",
+                    "format": "decimal",
+                    "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
+                    "description": "Similar to the trading API"
+                  },
+                  "displayHighQuantity": {
+                    "type": "string",
+                    "format": "decimal",
+                    "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
+                    "description": "Similar to the trading API"
+                  },
+                  "metadata": {
+                    "type": "string",
+                    "description": "Similar to the trading API"
                   }
                 },
                 "required": [
@@ -6028,7 +6462,7 @@
         "parameters": [],
         "responses": {
           "200": {
-            "description": "Success",
+            "description": "Successful response",
             "content": {
               "application/json": {
                 "schema": {
@@ -6042,9 +6476,21 @@
                     }
                   }
                 },
-                "example": {
-                  "numberOfOrders": "9",
-                  "numberOfRfqs": 7
+                "examples": {
+                  "Success": {
+                    "summary": "Success",
+                    "value": {
+                      "numberOfOrders": "9",
+                      "numberOfRfqs": 7
+                    }
+                  },
+                  "Success_1": {
+                    "summary": "Success 1",
+                    "value": {
+                      "numberOfOrders": "2",
+                      "numberOfRfqs": "0"
+                    }
+                  }
                 }
               }
             }
@@ -6130,6 +6576,18 @@
                       }
                     },
                     "description": "targetParties to target the mass cancel orders. \nIf multiple targetParty objects are in a request, the system cancels orders with all targetParties. \nFor example: \nOrder1 has party1 \nOrder2 has party1 and party2 \nOrder3 has party1, party2 and party3 \nOrder4 has no parties \nA mass cancel request with targetParties(party1 and party2) will cancel order 2 and 3. \n`CHANGED v1.46.0` Note: For accounts: id=accountId, source=D, role=1001 source=P, role=24"
+                  },
+                  "cancelReason": {
+                    "type": "string",
+                    "enum": [
+                      "MassCancelOnBehalf",
+                      "MassCancelRequest",
+                      "CorporateAction"
+                    ],
+                    "x-enumDescriptions": {
+                      "MassCancelOnBehalf": "default if nothing is sent"
+                    },
+                    "description": "Cancellation reason. (populated in the cancellation events)"
                   }
                 },
                 "required": [
@@ -6165,7 +6623,7 @@
         "tags": [
           "Operations"
         ],
-        "description": "Trade Entry API allows you to capture trade that was done out of the order book\n\n##### Supported values for the type field\n\n| Trade Type | Description | **FIX** TrdType(828) |\n| --- | --- | --- |\n| Block | Block trade | 1 |\n| Other | Other | 99 |\n| EFRP | Exchange for Related Position | 2 |\n| ECRP | Exchange of Contracts for Related Positions | 101 |\n| EFP | Exchange for Physical | 102 |\n| `(NEW v1.47.0)` Reversal | Trade Reversal | 103 |\n| Transfer | Transfer | 3 |\n| EFS | Exchange for Swap | 12 |\n| EFR | Exchange for Risk | 11 |\n| EOO | Exchange of Options for Options | 14 |\n| OPNT | Over the Counter Privately Negotiated Trades | 22 |\n| SFF | Substitution of Futures for Forwards | 23 |\n| OptionExercise | Option exercise | 45 |\n| OTCLNOFS | OTC / Large Notional Off Facility Swap | 54 |\n| EBF | Exchange Basis Facility | 55 |\n| Netted | Netted trade | 57 |\n| BlockSwap | Block swap trade | 58 |\n| CreditEvent | Credit event trade | 59 |\n| SuccessionEvent | Succession event trade | 60 |\n\n#### Trade Entry- Error Codes\n\n| Code | Message |\n| --- | --- |\n| 1 | System is unavailable |\n| 100 | Missing or invalid parameter: \\[FieldName\\] |\n| 100 | Trade \\[FieldName\\] must be less than \\[maxLong/10^ fieldPrecision |\n| 100 | Trade \\[FieldName\\] must be above than \\[minLong/10^ fieldPrecision\\] |\n| 101 | \\[FieldName\\] not found |\n| 102 | Currently not allowed |\n| 102 | Trading is not allowed during auction call |\n| 102 | Trading is not allowed during crossing |\n| 102 | Instrument trading is not allowed |\n| 102 | Price precision is\\[PricePrecision\\] |\n| 102 | Quantity precision is\\[QuantityPrecision\\] |\n| 102 | Minimum trade quantity is \\[MinQuantity\\] |\n| 102 | MinQuantity = max( minQuantity,  <br>minQuantityTradeEntry.amount) |\n| 102 | Maximum trade quantity is \\[MaxQuantity\\] |\n| 102 | Quantity increment is \\[quantityIncrement\\] |\n| 102 | Instrument trading is halted |\n| 102 | Price breaches \\[FieldName\\] of \\[FieldValue\\] (NEW v1.56.0) \\[Optional Text\\]  <br>  <br>_(NEW v1.56.0)  <br>_\\[Optional Text\\] = Price Band \\[Value\\]\\[Type\\], Reference Price: \\[RefPrice\\] , returned only in case of dynamic/ static price bands and not in case of leg price bands or instrument min/ max price bands |\n| 102 | Maximum value is \\[maxOrderValue\\] |\n| 102 | Price tick size is \\[tickSize\\] |\n| 102 | Trading is not allowed |\n| 102 | Missing position account |\n| `(NEW v1.56.0)`  <br>113 | Not supported |\n| 10001 | Permission denied |",
+        "description": "Trade Entry API allows you to capture trade that was done out of the order book\n\n#### Trade Entry- Error Codes\n\n| Code | Message |\n| --- | --- |\n| 1 | System is unavailable |\n| 100 | Missing or invalid parameter: \\[FieldName\\] |\n| 100 | Trade \\[FieldName\\] must be less than \\[maxLong/10^ fieldPrecision |\n| 100 | Trade \\[FieldName\\] must be above than \\[minLong/10^ fieldPrecision\\] |\n| 101 | \\[FieldName\\] not found |\n| 102 | Currently not allowed |\n| 102 | Trading is not allowed during auction call |\n| 102 | Trading is not allowed during crossing |\n| 102 | Instrument trading is not allowed |\n| 102 | Price precision is\\[PricePrecision\\] |\n| 102 | Quantity precision is\\[QuantityPrecision\\] |\n| 102 | Minimum trade quantity is \\[MinQuantity\\] |\n| 102 | MinQuantity = max( minQuantity,  <br>minQuantityTradeEntry.amount) |\n| 102 | Maximum trade quantity is \\[MaxQuantity\\] |\n| 102 | Quantity increment is \\[quantityIncrement\\] |\n| 102 | Instrument trading is halted |\n| 102 | Price breaches \\[FieldName\\] of \\[FieldValue\\] (NEW v1.56.0) \\[Optional Text\\]  <br>  <br>_(NEW v1.56.0)  <br>_\\[Optional Text\\] = Price Band \\[Value\\]\\[Type\\], Reference Price: \\[RefPrice\\] , returned only in case of dynamic/ static price bands and not in case of leg price bands or instrument min/ max price bands |\n| 102 | Maximum value is \\[maxOrderValue\\] |\n| 102 | Price tick size is \\[tickSize\\] |\n| 102 | Trading is not allowed |\n| 102 | Missing position account |\n| `(NEW v1.56.0)`  <br>113 | Not supported |\n| 10001 | Permission denied |",
         "parameters": [],
         "responses": {
           "200": {
@@ -6234,7 +6692,49 @@
                   },
                   "type": {
                     "type": "string",
-                    "description": "Type of the trade entry \nSee the table below for supported values"
+                    "description": "Type of the trade entry \nSee the table below for supported values",
+                    "enum": [
+                      "Block",
+                      "Other",
+                      "EFRP",
+                      "ECRP",
+                      "EFP",
+                      "Reversal",
+                      "Transfer",
+                      "EFS",
+                      "EFR",
+                      "EOO",
+                      "OPNT",
+                      "SFF",
+                      "OptionExercise",
+                      "OTCLNOFS",
+                      "EBF",
+                      "Netted",
+                      "BlockSwap",
+                      "CreditEvent",
+                      "SuccessionEvent"
+                    ],
+                    "x-enumDescriptions": {
+                      "Block": "Block trade (FIX TrdType 828: 1)",
+                      "Other": "Other (FIX TrdType 828: 99)",
+                      "EFRP": "Exchange for Related Position (FIX TrdType 828: 2)",
+                      "ECRP": "Exchange of Contracts for Related Positions (FIX TrdType 828: 101)",
+                      "EFP": "Exchange for Physical (FIX TrdType 828: 102)",
+                      "Reversal": "Trade Reversal (FIX TrdType 828: 103)",
+                      "Transfer": "Transfer (FIX TrdType 828: 3)",
+                      "EFS": "Exchange for Swap (FIX TrdType 828: 12)",
+                      "EFR": "Exchange for Risk (FIX TrdType 828: 11)",
+                      "EOO": "Exchange of Options for Options (FIX TrdType 828: 14)",
+                      "OPNT": "Over the Counter Privately Negotiated Trades (FIX TrdType 828: 22)",
+                      "SFF": "Substitution of Futures for Forwards (FIX TrdType 828: 23)",
+                      "OptionExercise": "Option exercise (FIX TrdType 828: 45)",
+                      "OTCLNOFS": "OTC / Large Notional Off Facility Swap (FIX TrdType 828: 54)",
+                      "EBF": "Exchange Basis Facility (FIX TrdType 828: 55)",
+                      "Netted": "Netted trade (FIX TrdType 828: 57)",
+                      "BlockSwap": "Block swap trade (FIX TrdType 828: 58)",
+                      "CreditEvent": "Credit event trade (FIX TrdType 828: 59)",
+                      "SuccessionEvent": "Succession event trade (FIX TrdType 828: 60)"
+                    }
                   },
                   "price": {
                     "type": "number",
@@ -6642,7 +7142,8 @@
                   },
                   "amount": {
                     "type": "string",
-                    "pattern": "^-?[0-9]+$",
+                    "format": "decimal",
+                    "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
                     "description": "Cash Amount per share \nMaximum 10 decimal places"
                   }
                 },
@@ -6745,12 +7246,14 @@
                   },
                   "ratioOld": {
                     "type": "string",
-                    "pattern": "^-?[0-9]+$",
+                    "format": "decimal",
+                    "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
                     "description": "ratioOld of the stock dividend/forward split \nMaximum 10 decimal places \nIf 1 new share is issued for each 2 shares held, ratioOld=2 and ratioNew=1. (European Convention)"
                   },
                   "ratioNew": {
                     "type": "string",
-                    "pattern": "^-?[0-9]+$",
+                    "format": "decimal",
+                    "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
                     "description": "ratioNew of the stock dividend/forward split \nMaximum 10 decimal places \nSee description of ratioOld for more details"
                   },
                   "quantityRounding": {
@@ -6788,7 +7291,7 @@
         "tags": [
           "Operations"
         ],
-        "description": "Get Candle Adjustments API allows you to retrieve the historical market data adjustment factors related to Corporate Actions at instrument level.\n\n#### **Response:**\n\n| Attribute | Type | Description |\n| --- | --- | --- |\n| count | Stringified Int | total number of records based on filter |\n| List of adjustmentFactors |  |  |\n| instrumentId | Same as Update Candle Adjustments | Same as Update Candle Adjustments |\n| exDate | Same as Update Candle Adjustments | Same as Update Candle Adjustments |\n| price | Same as Update Candle Adjustments | Same as Update Candle Adjustments |\n| quantity | Same as Update Candle Adjustments | Same as Update Candle Adjustments |\n\n#### Error Codes\n\nSame as Update Candle Adjustments",
+        "description": "Get Candle Adjustments API allows you to retrieve the historical market data adjustment factors related to Corporate Actions at instrument level.\n\n#### Error Codes\n\nSame as Update Candle Adjustments",
         "parameters": [
           {
             "name": "dateFrom",
@@ -6796,7 +7299,7 @@
             "required": false,
             "schema": {
               "type": "string",
-              "pattern": "^-?[0-9]+$"
+              "format": "date"
             },
             "description": "Search for the CAs that exDate ≥ dateFrom. \nFormat:YYYY-MM-DD",
             "example": "2024-08-01"
@@ -6807,9 +7310,9 @@
             "required": false,
             "schema": {
               "type": "string",
-              "pattern": "^-?[0-9]+$"
+              "format": "date"
             },
-            "description": "Search for the CAs that exDate < dateTo\nFormat: YYYY-MM-DD",
+            "description": "Search for the CAs that exDate < dateTo \nFormat: YYYY-MM-DD",
             "example": "2025-08-01"
           },
           {
@@ -6830,7 +7333,7 @@
             "schema": {
               "type": "string"
             },
-            "description": "object with 2 parameters:\nfield (String)\ndirection (Asc, Desc) direction\nIf nothing or invalid field was sent the default is [exDate, Desc]"
+            "description": "object with 2 parameters: \nfield (String) \ndirection (Asc, Desc) direction \nIf nothing or invalid field was sent the default is [exDate, Desc]"
           },
           {
             "name": "limit",
@@ -6838,9 +7341,10 @@
             "required": false,
             "schema": {
               "type": "string",
-              "pattern": "^-?[0-9]+$"
+              "pattern": "^-?[0-9]+$",
+              "x-max-value": 100
             },
-            "description": "How many records to include in each page"
+            "description": "How many records to include in each page \nIf nothing was sent default is 25"
           },
           {
             "name": "offset",
@@ -6850,12 +7354,12 @@
               "type": "string",
               "pattern": "^-?[0-9]+$"
             },
-            "description": "Which record to start send from (if you want page 3 and there are 50 records per page offset should be 150)\nIf nothing was sent default is 0 (=first record)"
+            "description": "Which record to start send from (if you want page 3 and there are 50 records per page offset should be 150) \nIf nothing was sent default is 0 (=first record)"
           }
         ],
         "responses": {
           "200": {
-            "description": "Success - with filters",
+            "description": "Successful response",
             "content": {
               "application/json": {
                 "schema": {
@@ -6864,26 +7368,7 @@
                     "adjustmentFactors": {
                       "type": "array",
                       "items": {
-                        "type": "object",
-                        "properties": {
-                          "projectId": {
-                            "type": "string"
-                          },
-                          "instrumentId": {
-                            "type": "string",
-                            "pattern": "^-?[0-9]+$",
-                            "description": "Instrument Id"
-                          },
-                          "exDate": {
-                            "type": "string"
-                          },
-                          "price": {
-                            "type": "string"
-                          },
-                          "quantity": {
-                            "type": "string"
-                          }
-                        }
+                        "$ref": "#/components/schemas/CandleAdjustment"
                       }
                     },
                     "count": {
@@ -6891,17 +7376,44 @@
                     }
                   }
                 },
-                "example": {
-                  "adjustmentFactors": [
-                    {
-                      "projectId": "151",
-                      "instrumentId": "22673",
-                      "exDate": "2024-08-01",
-                      "price": "1.234",
-                      "quantity": "2.456"
+                "examples": {
+                  "Success": {
+                    "summary": "Success",
+                    "value": {
+                      "adjustmentFactors": [
+                        {
+                          "projectId": "151",
+                          "instrumentId": "22673",
+                          "exDate": "2024-08-01",
+                          "price": "1.234",
+                          "quantity": "2.456"
+                        },
+                        {
+                          "projectId": "151",
+                          "instrumentId": "22673",
+                          "exDate": "2024-07-28",
+                          "price": "2",
+                          "quantity": "3"
+                        }
+                      ],
+                      "count": "2"
                     }
-                  ],
-                  "count": "1"
+                  },
+                  "Success_-_with_filters": {
+                    "summary": "Success - with filters",
+                    "value": {
+                      "adjustmentFactors": [
+                        {
+                          "projectId": "151",
+                          "instrumentId": "22673",
+                          "exDate": "2024-08-01",
+                          "price": "1.234",
+                          "quantity": "2.456"
+                        }
+                      ],
+                      "count": "1"
+                    }
+                  }
                 }
               }
             }
@@ -6948,7 +7460,7 @@
         "tags": [
           "Operations"
         ],
-        "description": "Update Candle Adjustments API allows you to create/update the historical market data adjustment factors related to Corporate Actions at instrument level.\n\n#### Request Parameters\n\n| Attribute | Type | Description |\n| --- | --- | --- |\n| instrumentId | Stringified number | Instrument ID to apply the cash distribution |\n| exDate | Stringified Date | Ex-date of the corporate action  <br>format YYYY-MM-DD |\n| price | Stringified Decimal | Optional  <br>  <br>The adjustment factor applicable to price related market data values prior to the exDate  <br>  <br>price or quantity is required |\n| quantity | Stringified Decimal | Optional  <br>  <br>The adjustment factor applicable to quantity related market data values prior to the exDate  <br>  <br>price or quantity is required |\n\n#### **Response:**\n\nNo response body\n\n#### Error Codes\n\n| Code | Message |\n| --- | --- |\n| 1 | System is unavailable |\n| 10001 | Permission denied |\n| 100 | Missing or invalid parameter: \\[FieldName\\] |\n| 101 | \\[FieldName\\] must be ≤ \\[maxLong/10^ fieldPrecision\\] |",
+        "description": "Update Candle Adjustments API allows you to create/update the historical market data adjustment factors related to Corporate Actions at instrument level.\n\n#### **Response:**\n\nNo response body\n\n#### Error Codes\n\n| Code | Message |\n| --- | --- |\n| 1 | System is unavailable |\n| 10001 | Permission denied |\n| 100 | Missing or invalid parameter: \\[FieldName\\] |\n| 101 | \\[FieldName\\] must be ≤ \\[maxLong/10^ fieldPrecision\\] |",
         "parameters": [],
         "responses": {
           "200": {
@@ -7003,21 +7515,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "type": "object",
-                "properties": {
-                  "instrumentId": {
-                    "type": "integer"
-                  },
-                  "exDate": {
-                    "type": "string"
-                  },
-                  "price": {
-                    "type": "string"
-                  },
-                  "quantity": {
-                    "type": "string"
-                  }
-                }
+                "$ref": "#/components/schemas/CandleAdjustment"
               },
               "example": {
                 "instrumentId": 22673,
@@ -7099,7 +7597,7 @@
                   },
                   "exDate": {
                     "type": "string",
-                    "pattern": "^-?[0-9]+$",
+                    "format": "date",
                     "description": "Ex-date of the corporate action \nformat YYYY-MM-DD \nIf not exist, delete all adjustment factors of the instrument"
                   }
                 },
@@ -7190,6 +7688,7 @@
                   },
                   "updateReferencePrice": {
                     "type": "boolean",
+                    "default": true,
                     "description": "Update the reference price with the settlement price \ndefault is True"
                   }
                 },
@@ -7306,14 +7805,31 @@
         "parameters": [],
         "responses": {
           "200": {
-            "description": "Success with time interval",
+            "description": "Successful response",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "object",
                   "properties": {}
                 },
-                "example": {}
+                "examples": {
+                  "Success": {
+                    "summary": "Success",
+                    "value": {}
+                  },
+                  "Success_with_filter": {
+                    "summary": "Success with filter",
+                    "value": {}
+                  },
+                  "Success_with_Explicit_time": {
+                    "summary": "Success with Explicit time",
+                    "value": {}
+                  },
+                  "Success_with_time_interval": {
+                    "summary": "Success with time interval",
+                    "value": {}
+                  }
+                }
               }
             }
           },
@@ -7366,6 +7882,31 @@
                       "pattern": "^-?[0-9]+$"
                     },
                     "description": "List of instruments to halt \nNote: not sending this parameter will halt the trading for all instruments"
+                  },
+                  "instrumentGroupIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "pattern": "^-?[0-9]+$"
+                    },
+                    "description": "List of instrument groups to halt"
+                  },
+                  "scheduleHaltTime": {
+                    "type": "integer",
+                    "format": "int64",
+                    "x-epoch-unit": "seconds",
+                    "description": "When to halt the trading \nIf this is not sent, the halt will be immediate — Unix epoch time in seconds"
+                  },
+                  "scheduleResumeTime": {
+                    "type": "integer",
+                    "format": "int64",
+                    "x-epoch-unit": "seconds",
+                    "description": "When to resume trading — Unix epoch time in seconds"
+                  },
+                  "scheduleResumeTimeInterval": {
+                    "type": "string",
+                    "pattern": "^-?[0-9]+$",
+                    "description": "When to resume trading in minutes Interval"
                   }
                 }
               },
@@ -7391,14 +7932,23 @@
         "parameters": [],
         "responses": {
           "200": {
-            "description": "Success with filter",
+            "description": "Successful response",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "object",
                   "properties": {}
                 },
-                "example": {}
+                "examples": {
+                  "Success": {
+                    "summary": "Success",
+                    "value": {}
+                  },
+                  "Success_with_filter": {
+                    "summary": "Success with filter",
+                    "value": {}
+                  }
+                }
               }
             }
           },
@@ -7451,6 +8001,14 @@
                       "pattern": "^-?[0-9]+$"
                     },
                     "description": "List of instruments to resume \nNote: not sending this parameter will resume the trading for all instruments"
+                  },
+                  "instrumentGroupIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "pattern": "^-?[0-9]+$"
+                    },
+                    "description": "List of instrument groups to resume"
                   }
                 }
               },
