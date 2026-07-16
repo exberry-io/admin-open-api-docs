@@ -22,7 +22,7 @@ info:
     **Sandbox environment endpoint:** `https://admin-api.uat.exberry-uat.io`
 
     **Guidelines:**
-    - All numbers are stringified unless explicitly mentioned otherwise. Stringified integers are marked with pattern `^-?[0-9]+$`; stringified decimals with `format: decimal`.
+    - All numbers are stringified unless explicitly mentioned otherwise. Stringified integers are marked with pattern `^[0-9]+$`; stringified decimals with `format: decimal`.
     - Optional fields should be omitted from request if not required
     - System ignores any additional parameter that are sent on request body but was not specified in this document
 
@@ -956,4 +956,4 @@ operations:
       | 100 | Missing or invalid parameter: \[FieldName\] |
       | 10001 | Permission denied |
 schema_descriptions:
-  Instrument.properties.symbol: 'Unique instrument symbol. Max length 16. Allowed characters: a-Z, 0-9, - . ^ = /'
+  Instrument.properties.symbol: 'Unique instrument symbol. Allowed characters: a-Z, 0-9, - . ^ = /'

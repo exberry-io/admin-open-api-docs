@@ -3,7 +3,7 @@
   "info": {
     "title": "Exberry Admin API",
     "version": "1.58.0",
-    "description": "Exberry Admin API allows managing exchange static data (instruments, trading calendars and more) as well as sending operational commands (EOD, halt trading and more).\n\n**Sandbox environment endpoint:** `https://admin-api.uat.exberry-uat.io`\n\n**Guidelines:**\n- All numbers are stringified unless explicitly mentioned otherwise. Stringified integers are marked with pattern `^-?[0-9]+$`; stringified decimals with `format: decimal`.\n- Optional fields should be omitted from request if not required\n- System ignores any additional parameter that are sent on request body but was not specified in this document\n\n**HTTP Error Codes:**\n- 400: Maximum request size exceeded (60KB) or Invalid JSON\n- 401: Invalid token\n- 403: Authentication and authorization errors\n- 404: Route not found\n- 500: Any other error\n- 503: System not available\n- 504: Timeout\n\n**Maker-Checker approval flow** (to activate, contact the operations team):\n\nThe maker-checker process is a workflow that requires the approval of at least two individuals to agree on an action. It involves two parties:\n\n- **Maker**: the person who initiates the action (can always see their own requests and reject them)\n- **Checker**: the person who approves the action (cannot approve their own request)\n\nWhen a user requests an action (like update or create an instrument), the change does not happen immediately - e.g. it won't be shown in the instrument list. The change takes place only after approval. A super user with the right permission can override this flow.\n\nFor any action that is part of the flow, the request can include a `comment` field (String) - the maker's explanation of what the action contains, giving the checker the change context.\n\nInstead of the regular response message, any API request involved in the flow returns a `MakerCheckerRequest` entity (see the model below). Its `data` property contains the data model of the requested action, identical to the API specification for that action without maker-checker activated.",
+    "description": "Exberry Admin API allows managing exchange static data (instruments, trading calendars and more) as well as sending operational commands (EOD, halt trading and more).\n\n**Sandbox environment endpoint:** `https://admin-api.uat.exberry-uat.io`\n\n**Guidelines:**\n- All numbers are stringified unless explicitly mentioned otherwise. Stringified integers are marked with pattern `^[0-9]+$`; stringified decimals with `format: decimal`.\n- Optional fields should be omitted from request if not required\n- System ignores any additional parameter that are sent on request body but was not specified in this document\n\n**HTTP Error Codes:**\n- 400: Maximum request size exceeded (60KB) or Invalid JSON\n- 401: Invalid token\n- 403: Authentication and authorization errors\n- 404: Route not found\n- 500: Any other error\n- 503: System not available\n- 504: Timeout\n\n**Maker-Checker approval flow** (to activate, contact the operations team):\n\nThe maker-checker process is a workflow that requires the approval of at least two individuals to agree on an action. It involves two parties:\n\n- **Maker**: the person who initiates the action (can always see their own requests and reject them)\n- **Checker**: the person who approves the action (cannot approve their own request)\n\nWhen a user requests an action (like update or create an instrument), the change does not happen immediately - e.g. it won't be shown in the instrument list. The change takes place only after approval. A super user with the right permission can override this flow.\n\nFor any action that is part of the flow, the request can include a `comment` field (String) - the maker's explanation of what the action contains, giving the checker the change context.\n\nInstead of the regular response message, any API request involved in the flow returns a `MakerCheckerRequest` entity (see the model below). Its `data` property contains the data model of the requested action, identical to the API specification for that action without maker-checker activated.",
     "contact": {
       "name": "Exberry Support",
       "url": "https://exberry.io"
@@ -40,17 +40,19 @@
         "properties": {
           "id": {
             "type": "string",
-            "pattern": "^-?[0-9]+$",
+            "pattern": "^[0-9]+$",
             "description": "Account ID (Not part of request body in Create/ Update Account)",
             "readOnly": true
           },
           "name": {
             "type": "string",
-            "description": "Account Name \nMax length = 50 and ASCII (32 -126) chars only"
+            "maxLength": 50,
+            "pattern": "^[ -~]*$",
+            "description": "Account Name"
           },
           "mpId": {
             "type": "string",
-            "pattern": "^-?[0-9]+$",
+            "pattern": "^[0-9]+$",
             "description": "MP ID (System generated identifier of MPs)"
           },
           "description": {
@@ -80,7 +82,7 @@
         "properties": {
           "id": {
             "type": "string",
-            "pattern": "^-?[0-9]+$",
+            "pattern": "^[0-9]+$",
             "description": "Calendar ID (Not part of request body in Create/ Update Calendar)",
             "readOnly": true
           },
@@ -97,7 +99,7 @@
           },
           "timeZone": {
             "type": "string",
-            "description": "Time zone difference from UTC. This affects all the dates and times in the calendar \nsamples: \"+03:00\", \"-02:00\""
+            "description": "Time zone difference from UTC. This affects all the dates and times in the calendar\nsamples: \"+03:00\", \"-02:00\""
           },
           "marketOpen": {
             "type": "string",
@@ -152,14 +154,14 @@
                     "Resume": "for auctions that will be triggered as a result of manual resume operation by system operator who will click “Resume” button, or by scheduled resume (you can have only one auction per calendar with that trigger",
                     "AutoResume": "for auctions that will be triggered as a result of automatic resume operation by system as part of CBR. This can happen in case of a temporary halt that is being configured in Circuit Breaker Rule. (you can have only one auction per calendar with that trigger"
                   },
-                  "description": "When the auction is triggered."
+                  "description": "When the auction is triggered"
                 },
                 "days": {
                   "type": "array",
                   "items": {
                     "type": "string"
                   },
-                  "description": "List of days in week that auctions will start \nMandatory if trigger = TimeBased"
+                  "description": "List of days in week that auctions will start\nMandatory if trigger = TimeBased"
                 },
                 "startTimes": {
                   "type": "array",
@@ -167,7 +169,7 @@
                     "type": "string",
                     "pattern": "^\\d{2}:\\d{2}:\\d{2}$"
                   },
-                  "description": "List of start time for the auction in terms of calendar time zone \nMandatory if trigger = TimeBased \nAuction objects are sorted by ascending order of this field."
+                  "description": "List of start time for the auction in terms of calendar time zone\nMandatory if trigger = TimeBased\nAuction objects are sorted by ascending order of this field"
                 },
                 "allowedTimeInForces": {
                   "type": "array",
@@ -183,7 +185,7 @@
                       "ATC"
                     ]
                   },
-                  "description": "List of allowed TIF . \nNote: IOC behaves like GAA but allows the use of market orders during the auction. \nRefer here for more details"
+                  "description": "List of allowed TIF\nNote: IOC behaves like GAA but allows the use of market orders during the auction\nRefer here for more details"
                 },
                 "matchingAlgorithm": {
                   "type": "string",
@@ -197,7 +199,7 @@
                     "EQUILIBRIUM_PRICE": "execution based on single calculated equilibrium price",
                     "EQUILIBRIUM_PRICE_2": "execution based on single calculated equilibrium price"
                   },
-                  "description": "Auction matching algorithm,\n\nNote: Contact Exberry to get more details on the exact price calculation."
+                  "description": "Auction matching algorithm\n\nNote: Contact Exberry to get more details on the exact price calculation"
                 },
                 "eventsModes": {
                   "type": "array",
@@ -216,22 +218,22 @@
                 },
                 "duration": {
                   "type": "string",
-                  "pattern": "^-?[0-9]+$",
+                  "pattern": "^[0-9]+$",
                   "description": "Auction duration in milliseconds"
                 },
                 "randomEndTime": {
                   "type": "string",
-                  "pattern": "^-?[0-9]+$",
-                  "description": "Auction random end time in milliseconds. Time range in which auction ends. If specified, auction ends randomly in time range [X - randomEndTime / 2; X + randomEndTime / 2] \nX = startTime + duration"
+                  "pattern": "^[0-9]+$",
+                  "description": "Auction random end time in milliseconds. Time range in which auction ends. If specified, auction ends randomly in time range [X - randomEndTime / 2; X + randomEndTime / 2]\nX = startTime + duration"
                 },
                 "crossingPause": {
                   "type": "string",
-                  "pattern": "^-?[0-9]+$",
-                  "description": "Auction crossing pause is a time range which will delay the crossing(executions) time from start in milliseconds. During this time - no orders commands can be sent."
+                  "pattern": "^[0-9]+$",
+                  "description": "Auction crossing pause is a time range which will delay the crossing(executions) time from start in milliseconds. During this time - no orders commands can be sent"
                 },
                 "overrideReferencePrice": {
                   "type": "boolean",
-                  "description": "Whether to refer to the auction equilibrium price as refrence price to daily price bands. \nrelevant only when matchingAlgorithm = `EQUILIBRIUM_PRICE` \nNote: empty means false."
+                  "description": "Whether to refer to the auction equilibrium price as refrence price to daily price bands\nrelevant only when matchingAlgorithm = `EQUILIBRIUM_PRICE`\nNote: empty means false"
                 },
                 "extensions": {
                   "type": "array",
@@ -240,18 +242,18 @@
                     "properties": {
                       "criticalPhase": {
                         "type": "string",
-                        "pattern": "^-?[0-9]+$",
+                        "pattern": "^[0-9]+$",
                         "description": "Critical phase in milliseconds where auction will be checked if needs to be extended"
                       },
                       "timeFrom": {
                         "type": "string",
-                        "pattern": "^-?[0-9]+$",
+                        "pattern": "^[0-9]+$",
                         "description": "Specify the extension time start in milliseconds"
                       },
                       "timeTo": {
                         "type": "string",
-                        "pattern": "^-?[0-9]+$",
-                        "description": "Specify the extension time end in milliseconds \nIn case timeTo > timeFrom , extension will be randomly selected within that range (include timeTo & timeFrom)"
+                        "pattern": "^[0-9]+$",
+                        "description": "Specify the extension time end in milliseconds\nIn case timeTo > timeFrom , extension will be randomly selected within that range (include timeTo & timeFrom)"
                       }
                     },
                     "required": [
@@ -285,25 +287,25 @@
         "properties": {
           "instrumentId": {
             "type": "string",
-            "pattern": "^-?[0-9]+$",
+            "pattern": "^[0-9]+$",
             "description": "Instrument ID to apply the cash distribution"
           },
           "exDate": {
             "type": "string",
             "format": "date",
-            "description": "Ex-date of the corporate action \nformat YYYY-MM-DD"
+            "description": "Ex-date of the corporate action\nformat YYYY-MM-DD"
           },
           "price": {
             "type": "string",
             "format": "decimal",
             "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
-            "description": "The adjustment factor applicable to price related market data values prior to the exDate \nprice or quantity is required"
+            "description": "The adjustment factor applicable to price related market data values prior to the exDate\nprice or quantity is required"
           },
           "quantity": {
             "type": "string",
             "format": "decimal",
             "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
-            "description": "The adjustment factor applicable to quantity related market data values prior to the exDate \nprice or quantity is required"
+            "description": "The adjustment factor applicable to quantity related market data values prior to the exDate\nprice or quantity is required"
           }
         },
         "description": "Historical market data adjustment factor related to a Corporate Action, at instrument level.",
@@ -317,7 +319,7 @@
         "properties": {
           "id": {
             "type": "string",
-            "pattern": "^-?[0-9]+$",
+            "pattern": "^[0-9]+$",
             "description": "CBR ID (Not part of request body in Create/ Update CBR)",
             "readOnly": true
           },
@@ -330,14 +332,14 @@
             "items": {
               "type": "integer"
             },
-            "description": "List of instrument ids to apply this rule \nIf empty - apply this rule for all instruments"
+            "description": "List of instrument ids to apply this rule\nIf empty - apply this rule for all instruments"
           },
           "instrumentGroupIds": {
             "type": "array",
             "items": {
               "type": "integer"
             },
-            "description": "List of instrument group ids to apply this rule \nNote: Only one of instrumentIds and instrumentGroupIds is allowed"
+            "description": "List of instrument group ids to apply this rule\nNote: Only one of instrumentIds and instrumentGroupIds is allowed"
           },
           "status": {
             "type": "string",
@@ -367,7 +369,7 @@
           },
           "value": {
             "type": "number",
-            "description": "The value in percent that considered breach (value > 1 means increase on rate and 0 < value < 1 means decline rate) Example: \n0.8 means decline of 20% \n1.2 means increase of 20%"
+            "description": "The value in percent that considered breach (value > 1 means increase on rate and 0 < value < 1 means decline rate) Example:\n0.8 means decline of 20%\n1.2 means increase of 20%"
           },
           "actionType": {
             "type": "string",
@@ -384,11 +386,11 @@
           },
           "actionValue": {
             "type": "number",
-            "description": "“HALT_TRADING” - If empty - halt the trading for that instrument permanently (can only be resumed manually) Else time in minutes. \n“NOTIFY_BACKOFFICE” - always empty \n`NEW`“RESUME_AUCTION” - always empty"
+            "description": "“HALT_TRADING” - If empty - halt the trading for that instrument permanently (can only be resumed manually) Else time in minutes\n“NOTIFY_BACKOFFICE” - always empty\n`NEW`“RESUME_AUCTION” - always empty"
           },
           "priority": {
             "type": "integer",
-            "description": "Rule priority - the highest is more important."
+            "description": "Rule priority - the highest is more important"
           },
           "rounding": {
             "type": "string",
@@ -435,14 +437,14 @@
         "properties": {
           "id": {
             "type": "string",
-            "pattern": "^-?[0-9]+$",
+            "pattern": "^[0-9]+$",
             "description": "Instrument ID (Not part of request body in Create/ Update Instrument)",
             "readOnly": true
           },
           "symbol": {
             "type": "string",
             "maxLength": 16,
-            "description": "Unique instrument symbol. Max length 16. Allowed characters: a-Z, 0-9, - . ^ = /"
+            "description": "Unique instrument symbol. Allowed characters: a-Z, 0-9, - . ^ = /"
           },
           "quoteCurrency": {
             "type": "string",
@@ -450,7 +452,7 @@
           },
           "calendarId": {
             "type": "string",
-            "pattern": "^-?[0-9]+$",
+            "pattern": "^[0-9]+$",
             "description": "Calendar ID"
           },
           "pricePrecision": {
@@ -526,16 +528,16 @@
           },
           "tickSizeTableId": {
             "type": "string",
-            "pattern": "^-?[0-9]+$",
+            "pattern": "^[0-9]+$",
             "description": "Tick size table ID"
           },
           "groupIds": {
             "type": "array",
             "items": {
               "type": "string",
-              "pattern": "^-?[0-9]+$"
+              "pattern": "^[0-9]+$"
             },
-            "description": "A list of group Ids."
+            "description": "A list of group Ids"
           },
           "category": {
             "$ref": "#/components/schemas/InstrumentCategory"
@@ -558,13 +560,13 @@
             "type": "integer",
             "format": "int64",
             "x-epoch-unit": "seconds",
-            "description": "Mandatory if Category = O (option) OR F (Futures) \nUsed for derivatives, trading is allowed from this time. \nBefore this time, marketStatus is in Closed state without changing as per the calendar. — Unix epoch time in seconds"
+            "description": "Mandatory if Category = O (option) OR F (Futures)\nUsed for derivatives, trading is allowed from this time\nBefore this time, marketStatus is in Closed state without changing as per the calendar. — Unix epoch time in seconds"
           },
           "stopDate": {
             "type": "integer",
             "format": "int64",
             "x-epoch-unit": "seconds",
-            "description": "Mandatory if Category = O (option) OR F (Futures) \nUsed for derivatives, trading is allowed up to this time. \nAt this time all active orders are being cancelled. \nSee tradingCutoffs for instrument expiration details \nAt this time marketStatus changes to Closed and remains in the same state without changing as per the calendar. — Unix epoch time in seconds"
+            "description": "Mandatory if Category = O (option) OR F (Futures)\nUsed for derivatives, trading is allowed up to this time\nAt this time all active orders are being cancelled\nSee tradingCutoffs for instrument expiration details\nAt this time marketStatus changes to Closed and remains in the same state without changing as per the calendar. — Unix epoch time in seconds"
           },
           "tradingCutoffs": {
             "type": "array",
@@ -573,13 +575,13 @@
               "properties": {
                 "type": {
                   "type": "string",
-                  "description": "One of the below values: \nRefer Trade Entry/type field for the values; all values are supported."
+                  "description": "One of the below values:\nRefer Trade Entry/type field for the values; all values are supported"
                 },
                 "timestamp": {
                   "type": "integer",
                   "format": "int64",
                   "x-epoch-unit": "seconds",
-                  "description": "Cutoff time for trade reporting of the type defined in the ‘type’ field. \nInstrument status changed to be Disabled at the latest cutoff. (considering also the stopDate) \nIf not defined, stopDate will be the cutoff time for trade types not defined. \nApplicable to any Trade entry — Unix epoch time in seconds"
+                  "description": "Cutoff time for trade reporting of the type defined in the ‘type’ field\nInstrument status changed to be Disabled at the latest cutoff. (considering also the stopDate)\nIf not defined, stopDate will be the cutoff time for trade types not defined\nApplicable to any Trade entry — Unix epoch time in seconds"
                 }
               }
             },
@@ -599,36 +601,36 @@
               "N": "Non-Deliverable",
               "X": "Not set"
             },
-            "description": "Mandatory if Category = O (option) OR F (Futures) \nDelivery type"
+            "description": "Mandatory if Category = O (option) OR F (Futures)\nDelivery type"
           },
           "contractSize": {
             "type": "string",
             "format": "decimal",
             "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
-            "description": "Contract size \n`(NEW v1.54.0)` \nThe multiplier used to convert instrument trading units to Settlement units (i.e. asset traded in kg and settled in grams) \nIf not set, treated as contractSize = 1"
+            "description": "Contract size\n`(NEW v1.54.0)`\nThe multiplier used to convert instrument trading units to Settlement units (i.e. asset traded in kg and settled in grams)\nIf not set, treated as contractSize = 1"
           },
           "contractSizeUnit": {
             "type": "string",
-            "description": "Specifies the units that instrument is trading in."
+            "description": "Specifies the units that instrument is trading in"
           },
           "priceMultiplier": {
             "type": "number",
-            "description": "The multiplier used to convert quoted per units to Settlement units \nFor example, GOLD 99.99% quoted in USD per oz. price multiplier is applicable to “per oz” part of the definition. \nIf not set, treated as priceMultiplier = 1"
+            "description": "The multiplier used to convert quoted per units to Settlement units\nFor example, GOLD 99.99% quoted in USD per oz. price multiplier is applicable to “per oz” part of the definition\nIf not set, treated as priceMultiplier = 1"
           },
           "priceUnit": {
             "type": "string",
-            "description": "Specifies the quoted unit of the instrument. For example, the price is quoted per Oz."
+            "description": "Specifies the quoted unit of the instrument. For example, the price is quoted per Oz"
           },
           "expiryDate": {
             "type": "string",
             "format": "date",
-            "description": "Mandatory if Category = O (option) \nExpiry date. format YYYY-MM-DD"
+            "description": "Mandatory if Category = O (option)\nExpiry date. format YYYY-MM-DD"
           },
           "strike": {
             "type": "string",
             "format": "decimal",
             "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
-            "description": "Mandatory if Category = O (option) \nOption strike"
+            "description": "Mandatory if Category = O (option)\nOption strike"
           },
           "exerciseType": {
             "type": "string",
@@ -642,7 +644,7 @@
               "E": "European",
               "B": "Bermudan"
             },
-            "description": "Mandatory if Category = O (option) \nOption exercise type"
+            "description": "Mandatory if Category = O (option)\nOption exercise type"
           },
           "dailyMinPricePercentage": {
             "type": "number",
@@ -654,11 +656,11 @@
           },
           "dailyMinPriceAbsolute": {
             "type": "number",
-            "description": "Minimum allowed absolute price change from the reference price for the instrument \nCannot be used together with `dailyMinPricePercentage`"
+            "description": "Minimum allowed absolute price change from the reference price for the instrument\nCannot be used together with `dailyMinPricePercentage`"
           },
           "dailyMaxPriceAbsolute": {
             "type": "number",
-            "description": "Maximum allowed absolute price change from the reference price for the instrument \nCannot be used together with `dailyMaxPricePercentage`"
+            "description": "Maximum allowed absolute price change from the reference price for the instrument\nCannot be used together with `dailyMaxPricePercentage`"
           },
           "tickMinPricePercentage": {
             "type": "number",
@@ -670,11 +672,11 @@
           },
           "tickMinPriceAbsolute": {
             "type": "number",
-            "description": "Minimum allowed absolute price change from the tick reference price \nCannot be used together with `tickMinPricePercentage`"
+            "description": "Minimum allowed absolute price change from the tick reference price\nCannot be used together with `tickMinPricePercentage`"
           },
           "tickMaxPriceAbsolute": {
             "type": "number",
-            "description": "Maximum allowed absolute price change from the tick reference price \nCannot be used together with `tickMaxPricePercentage`"
+            "description": "Maximum allowed absolute price change from the tick reference price\nCannot be used together with `tickMaxPricePercentage`"
           },
           "applicablePriceBands": {
             "type": "array",
@@ -694,15 +696,15 @@
                   "items": {
                     "type": "string"
                   },
-                  "description": "If not defined, priceBand applies for all trade types \nAllowed values: \n- CLOB \n- RFQ \n- Trade Types on Trade Entry"
+                  "description": "If not defined, priceBand applies for all trade types\nAllowed values:\n- CLOB\n- RFQ\n- Trade Types on Trade Entry"
                 }
               }
             },
-            "description": "If not configured, all price bands apply for all trade types. \nIf configured, only the specified price bands apply for specified trade types."
+            "description": "If not configured, all price bands apply for all trade types\nIf configured, only the specified price bands apply for specified trade types"
           },
           "underlyingInstrumentId": {
             "type": "integer",
-            "description": "Applicable if Category = O (option) OR F (Futures) OR K (Strategies) \nUnderlying instrument id."
+            "description": "Applicable if Category = O (option) OR F (Futures) OR K (Strategies)\nUnderlying instrument id"
           },
           "strategyType": {
             "type": "string",
@@ -718,11 +720,11 @@
             "items": {
               "type": "integer"
             },
-            "description": "Mandatory if Category = K (Strategies) \nArray of instrument ids of that strategy - sorted so that leg1 is the first leg2 second etc. \n- On spread: 2 legs are required \n- On strips: 2 ≤ number of legs < 24"
+            "description": "Mandatory if Category = K (Strategies)\nArray of instrument ids of that strategy - sorted so that leg1 is the first leg2 second etc\n- On spread: 2 legs are required\n- On strips: 2 ≤ number of legs < 24"
           },
           "leg1ReferencePrice": {
             "type": "number",
-            "description": "Mandatory if Category = K (Strategies) AND strategyType=SPREAD. Optional if Category = K (Strategies) AND strategyType!=SPREAD \nLeg1 reference price"
+            "description": "Mandatory if Category = K (Strategies) AND strategyType=SPREAD. Optional if Category = K (Strategies) AND strategyType!=SPREAD\nLeg1 reference price"
           },
           "legPriceBands": {
             "type": "string",
@@ -739,43 +741,43 @@
           "bidAskTickRefPrice": {
             "type": "boolean",
             "default": false,
-            "description": "- true: System considers best Bid/best Ask when calculating tickReferencePrice \n- false: best Bid/best Ask is not considered (default)"
+            "description": "true: System considers best Bid/best Ask when calculating tickReferencePrice\n- false: best Bid/best Ask is not considered (default)"
           },
           "coupon": {
             "type": "integer",
-            "description": "Only if Category = D(Dept instruments) \nThe coupon of the bonds"
+            "description": "Only if Category = D(Dept instruments)\nThe coupon of the bonds"
           },
           "periodOfCoupon": {
             "type": "string",
-            "description": "Only if Category = D(Dept instruments) \nThe period of the coupon \noptional values: \nANNUAL \nSEMI_ANNUAL \nQUARTERLY"
+            "description": "Only if Category = D(Dept instruments)\nThe period of the coupon\noptional values:\nANNUAL\nSEMI_ANNUAL\nQUARTERLY"
           },
           "accrualConvention": {
             "type": "string",
-            "description": "Only if Category = D(Dept instruments) \nThe Convention calculate accrual of the coupon \noptinal values: \nACT_ACT \nNO_ACCRUAL \nACT_360 \n_30E_360 \nACT_365"
+            "description": "Only if Category = D(Dept instruments)\nThe Convention calculate accrual of the coupon\noptinal values:\nACT_ACT\nNO_ACCRUAL\nACT_360\n_30E_360\nACT_365"
           },
           "maturityDate": {
             "type": "string",
             "format": "date",
-            "description": "Only if Category = D(Dept instruments) \nThe maturity date of the bonds \nformat YYYY-MM-DD"
+            "description": "Only if Category = D(Dept instruments)\nThe maturity date of the bonds\nformat YYYY-MM-DD"
           },
           "deliveryStartDate": {
             "type": "string",
             "format": "date",
-            "description": "Delivery start date. \nApplicable if Category = O (option) OR F (Futures) or K (Strategies) \nformat YYYY-MM-DD"
+            "description": "Delivery start date\nApplicable if Category = O (option) OR F (Futures) or K (Strategies)\nformat YYYY-MM-DD"
           },
           "deliveryEndDate": {
             "type": "string",
             "format": "date",
-            "description": "Delivery end date. \nApplicable if Category = O (option) OR F (Futures) or K (Strategies) \nformat YYYY-MM-DD"
+            "description": "Delivery end date\nApplicable if Category = O (option) OR F (Futures) or K (Strategies)\nformat YYYY-MM-DD"
           },
           "settlementDate": {
             "type": "string",
             "format": "date",
-            "description": "Applicable if Category = O (option) OR F (Futures) or K (Strategies) \nSettlement date. format YYYY-MM-DD"
+            "description": "Applicable if Category = O (option) OR F (Futures) or K (Strategies)\nSettlement date. format YYYY-MM-DD"
           },
           "periodCode": {
             "type": "string",
-            "description": "Applicable if Category = O (option) OR F (Futures) or K (Strategies) \nPeriod code"
+            "description": "Applicable if Category = O (option) OR F (Futures) or K (Strategies)\nPeriod code"
           },
           "tradingModels": {
             "type": "array",
@@ -794,11 +796,11 @@
           },
           "maxRFQExpireTimePeriod": {
             "type": "integer",
-            "description": "Required if tradingModels has ‘RFQ’. \nMax allowed expiry time for an RFQ in seconds. \nNote: this is the time to maintain RFQ without expiration due to timeout."
+            "description": "Required if tradingModels has ‘RFQ’\nMax allowed expiry time for an RFQ in seconds\nNote: this is the time to maintain RFQ without expiration due to timeout"
           },
           "allegedTradeExpireTimePeriod": {
             "type": "integer",
-            "description": "`(CHANGED v1.51.0)` \nActive Alleged Trades are canceled by the system If configured, after allegedTradeExpireTimePeriod, \nIf not configured, at EOD"
+            "description": "`(CHANGED v1.51.0)`\nActive Alleged Trades are canceled by the system If configured, after allegedTradeExpireTimePeriod\nIf not configured, at EOD"
           },
           "minQuantityTradeEntries": {
             "type": "array",
@@ -807,7 +809,7 @@
               "properties": {
                 "type": {
                   "type": "string",
-                  "description": "trade entry type \nOne of the below values the: \nRefer Trade Entry/type field for the values; all values are supported."
+                  "description": "trade entry type\nOne of the below values the:\nRefer Trade Entry/type field for the values; all values are supported"
                 },
                 "amount": {
                   "type": "number",
@@ -889,18 +891,19 @@
         "properties": {
           "id": {
             "type": "string",
-            "pattern": "^-?[0-9]+$",
-            "description": "Instrument Group ID \n(Not part of the request body of Create Instrument Group)",
+            "pattern": "^[0-9]+$",
+            "description": "Instrument Group ID\n(Not part of the request body of Create Instrument Group)",
             "readOnly": true
           },
           "name": {
             "type": "string",
             "maxLength": 30,
-            "description": "Name of the Group \nMay contain values that are not unique \nMax length - 30 chars and can contain ASCII (32 -126)"
+            "pattern": "^[ -~]*$",
+            "description": "Name of the Group\nMay contain values that are not unique"
           },
           "parentGroupId": {
             "type": "string",
-            "pattern": "^-?[0-9]+$",
+            "pattern": "^[0-9]+$",
             "description": "Parent Group ID"
           }
         },
@@ -1073,28 +1076,36 @@
         "properties": {
           "id": {
             "type": "string",
-            "pattern": "^-?[0-9]+$",
+            "pattern": "^[0-9]+$",
             "description": "MP ID (Not part of request body in Create/ Update MP)",
             "readOnly": true
           },
           "name": {
             "type": "string",
-            "description": "Unique MP Name \nMax length = 30 and ASCII (32 -126) chars only"
+            "maxLength": 30,
+            "pattern": "^[ -~]*$",
+            "description": "Unique MP Name"
           },
           "longName": {
             "type": "string",
-            "description": "Long Name \nMax length = 100 and ASCII (32 -126) chars only"
+            "maxLength": 100,
+            "pattern": "^[ -~]*$",
+            "description": "Long Name"
           },
           "description": {
             "type": "string",
-            "description": "Description \nMax length = 100 and ASCII (32 -126) chars only"
+            "maxLength": 100,
+            "pattern": "^[ -~]*$",
+            "description": "Description"
           },
           "compIds": {
             "type": "array",
             "items": {
-              "type": "string"
+              "type": "string",
+              "maxLength": 16,
+              "pattern": "^[ -~]*$"
             },
-            "description": "Unique compId list to be configured on FIX connection for that MP. \nMax length = 16 and ASCII (32 -126) chars only"
+            "description": "Unique compId list to be configured on FIX connection for that MP"
           },
           "status": {
             "type": "string",
@@ -1110,7 +1121,7 @@
           "selfTradePrevention": {
             "type": "boolean",
             "default": false,
-            "description": "Determines whether self Trade Prevention is allowed for this MP or not. \nIf not sent then it is considered as false"
+            "description": "Determines whether self Trade Prevention is allowed for this MP or not\nIf not sent then it is considered as false"
           },
           "selfTradeAction": {
             "type": "string",
@@ -1129,14 +1140,14 @@
                 "items": {
                   "type": "integer"
                 },
-                "description": "A list of mpIds the MP can designate as counterparty when creating locked-in trades reports \n[0] = All MPs (All = current and future MPs)"
+                "description": "A list of mpIds the MP can designate as counterparty when creating locked-in trades reports\n[0] = All MPs (All = current and future MPs)"
               },
               "allegedMpIds": {
                 "type": "array",
                 "items": {
                   "type": "integer"
                 },
-                "description": "A list of mpIds the MP can designate as counterparty when creating alleged trades reports & alleged transfers \n[0] = All MPs (All = current and future MPs)"
+                "description": "A list of mpIds the MP can designate as counterparty when creating alleged trades reports & alleged transfers\n[0] = All MPs (All = current and future MPs)"
               },
               "thirdPartyLockedInMpIds": {
                 "type": "array",
@@ -1148,7 +1159,7 @@
                   "minItems": 2,
                   "maxItems": 2
                 },
-                "description": "A list of mpId pairs the MP can designate as buy MP and sell MP when creating locked-in trades reports as a third-party MP reporting the trade. \n[0,0] = All MPs with All MPs \n[0, 100] = mpId 100 with All MPs"
+                "description": "A list of mpId pairs the MP can designate as buy MP and sell MP when creating locked-in trades reports as a third-party MP reporting the trade\n[0,0] = All MPs with All MPs\n[0, 100] = mpId 100 with All MPs"
               }
             },
             "required": [
@@ -1165,7 +1176,8 @@
         "properties": {
           "label": {
             "type": "string",
-            "description": "apiKey label, max length =64"
+            "maxLength": 64,
+            "description": "apiKey label"
           },
           "apiKey": {
             "type": "string",
@@ -1177,7 +1189,7 @@
           },
           "mpId": {
             "type": "string",
-            "pattern": "^-?[0-9]+$",
+            "pattern": "^[0-9]+$",
             "description": "MP ID"
           },
           "permissions": {
@@ -1239,13 +1251,13 @@
           },
           "cancelOnDisconncet": {
             "type": "boolean",
-            "description": "- true: when there is disconnection all resting orders, active Quotes and active Alleged Trades are canceled \nNote: The field can set to be true only when \"market-service:market:place_order\" OR \"market-service:market:submit_rfq_quotes\" OR \"market-service:market:create_trade_report\" permission is included"
+            "description": "true: when there is disconnection all resting orders, active Quotes and active Alleged Trades are canceled\nNote: The field can set to be true only when \"market-service:market:place_order\" OR \"market-service:market:submit_rfq_quotes\" OR \"market-service:market:create_trade_report\" permission is included"
           },
           "allowedInstruments": {
             "type": "array",
             "items": {
               "type": "string",
-              "pattern": "^-?[0-9]+$"
+              "pattern": "^[0-9]+$"
             },
             "description": "This apiKey grant access only with this list of instruments",
             "deprecated": true
@@ -1254,23 +1266,23 @@
             "type": "array",
             "items": {
               "type": "string",
-              "pattern": "^-?[0-9]+$"
+              "pattern": "^[0-9]+$"
             },
-            "description": "This apiKey grants access only to the instruments in these groups. \nNote: Only one of allowedInstruments and allowedInstrumentGroupIds is allowed"
+            "description": "This apiKey grants access only to the instruments in these groups\nNote: Only one of allowedInstruments and allowedInstrumentGroupIds is allowed"
           },
           "blockedInstruments": {
             "type": "array",
             "items": {
               "type": "string",
-              "pattern": "^-?[0-9]+$"
+              "pattern": "^[0-9]+$"
             },
             "description": "This apiKey grant access with all instruments except this list of instruments",
             "deprecated": true
           },
           "accountId": {
             "type": "string",
-            "pattern": "^-?[0-9]+$",
-            "description": "Defines the Exchange Account the API key has access/visibility to. \nIf not defined, the API Key has access/visibility to all accounts."
+            "pattern": "^[0-9]+$",
+            "description": "Defines the Exchange Account the API key has access/visibility to\nIf not defined, the API Key has access/visibility to all accounts"
           }
         },
         "required": [
@@ -1287,25 +1299,29 @@
         "properties": {
           "id": {
             "type": "string",
-            "pattern": "^-?[0-9]+$",
+            "pattern": "^[0-9]+$",
             "description": "MP Group ID (Not part of request body in Create/ Update MP Group)",
             "readOnly": true
           },
           "name": {
             "type": "string",
-            "description": "Unique MP Group Name, max length =50 charecters and ASCII (32 -126) chars only"
+            "maxLength": 50,
+            "pattern": "^[ -~]*$",
+            "description": "Unique MP Group Name"
           },
           "compId": {
             "type": "string",
-            "description": "Unique compId to be configured on FIX connection for that MP Group. Max length = 16 and ASCII (32 -126) chars only"
+            "maxLength": 16,
+            "pattern": "^[ -~]*$",
+            "description": "Unique compId to be configured on FIX connection for that MP Group"
           },
           "mpIds": {
             "type": "array",
             "items": {
               "type": "string",
-              "pattern": "^-?[0-9]+$"
+              "pattern": "^[0-9]+$"
             },
-            "description": "List of MPs that this group contains, for all MPs, do not send this property."
+            "description": "List of MPs that this group contains, for all MPs, do not send this property"
           }
         },
         "required": [
@@ -1357,13 +1373,14 @@
         "properties": {
           "id": {
             "type": "string",
-            "pattern": "^-?[0-9]+$",
+            "pattern": "^[0-9]+$",
             "description": "Tick Size ID (Not part of request body in Create/ Update TickSize)",
             "readOnly": true
           },
           "name": {
             "type": "string",
-            "description": "Unique TickSize name \nMax length is 30"
+            "maxLength": 30,
+            "description": "Unique TickSize name"
           },
           "items": {
             "type": "array",
@@ -1372,7 +1389,7 @@
               "properties": {
                 "price": {
                   "type": "string",
-                  "description": "Price to- use the price when order price ≤ to this price and > from previous price (this array need to be sorted). \nIf empty this will apply to all order prices above the previous price."
+                  "description": "Price to- use the price when order price ≤ to this price and > from previous price (this array need to be sorted)\nIf empty this will apply to all order prices above the previous price"
                 },
                 "tickSize": {
                   "type": "number",
@@ -1384,7 +1401,7 @@
                 "tickSize"
               ]
             },
-            "description": "list of items \n(NEW v1.40.0) \nitems are stored after sorting by their prices(ascending order)"
+            "description": "list of items\n(NEW v1.40.0)\nitems are stored after sorting by their prices(ascending order)"
           }
         },
         "required": [
@@ -1698,7 +1715,7 @@
             "schema": {
               "type": "string"
             },
-            "description": "free text search by symbol \nSee the Suffix/Prefix table below"
+            "description": "free text search by symbol\nSee the Suffix/Prefix table below"
           },
           {
             "name": "description",
@@ -1707,7 +1724,7 @@
             "schema": {
               "type": "string"
             },
-            "description": "free text search by description \nSee the Suffix/Prefix table below"
+            "description": "free text search by description\nSee the Suffix/Prefix table below"
           },
           {
             "name": "calendarId",
@@ -1734,7 +1751,7 @@
             "schema": {
               "type": "string"
             },
-            "description": "search by tradingModel \n- CLOB \n- RFQ"
+            "description": "search by tradingModel\n- CLOB\n- RFQ"
           },
           {
             "name": "startDateFrom",
@@ -1744,7 +1761,7 @@
               "type": "string",
               "format": "date"
             },
-            "description": "Search for the instrument that startdate ≥ dateFrom. \nFormat:YYYY-MM-DDThh:mm:ss[.SSS] \nFor instruments without startDate, send - `0000-01-01T00:00`"
+            "description": "Search for the instrument that startdate ≥ dateFrom\nFormat:YYYY-MM-DDThh:mm:ss[.SSS]\nFor instruments without startDate, send - `0000-01-01T00:00`"
           },
           {
             "name": "startDateTo",
@@ -1764,7 +1781,7 @@
               "type": "string",
               "format": "date"
             },
-            "description": "Search for the instrument that stopdate ≥ dateFrom. Format:YYYY-MM-DDThh:mm:ss[.SSS] \nFor instruments without stopDate, send - `0000-01-01T00:00`"
+            "description": "Search for the instrument that stopdate ≥ dateFrom. Format:YYYY-MM-DDThh:mm:ss[.SSS]\nFor instruments without stopDate, send - `0000-01-01T00:00`"
           },
           {
             "name": "stopDateTo",
@@ -1792,7 +1809,7 @@
             "schema": {
               "type": "string"
             },
-            "description": "Search instruments that has an underling instrument and is in this category & active \nFor example see below \nfor values see in the Category List - here"
+            "description": "Search instruments that has an underling instrument and is in this category & active\nFor example see below\nfor values see in the Category List - here"
           },
           {
             "name": "statuses",
@@ -1804,7 +1821,7 @@
                 "type": "string"
               }
             },
-            "description": "Search by the list of statuses \n- ACTIVE \n- DISABLED \n- ARCHIVED"
+            "description": "Search by the list of statuses\n- ACTIVE\n- DISABLED\n- ARCHIVED"
           },
           {
             "name": "categories",
@@ -1816,7 +1833,7 @@
                 "type": "string"
               }
             },
-            "description": "Search by catagory. \nfor values see in the Category List - here"
+            "description": "Search by catagory\nfor values see in the Category List - here"
           },
           {
             "name": "subCategory",
@@ -1825,7 +1842,7 @@
             "schema": {
               "type": "string"
             },
-            "description": "Search by sub-catagory. \nfor values see in the SubCategory List - here"
+            "description": "Search by sub-catagory\nfor values see in the SubCategory List - here"
           },
           {
             "name": "strategy",
@@ -1834,7 +1851,7 @@
             "schema": {
               "type": "string"
             },
-            "description": "Search by strategy. \n- SPREAD \n- STRIP"
+            "description": "Search by strategy\n- SPREAD\n- STRIP"
           },
           {
             "name": "offset",
@@ -1843,7 +1860,7 @@
             "schema": {
               "type": "integer"
             },
-            "description": "Which record to start send from \nIf nothing was sent default is 0 (=first record)"
+            "description": "Which record to start send from\nIf nothing was sent default is 0 (=first record)"
           },
           {
             "name": "limit",
@@ -1852,7 +1869,7 @@
             "schema": {
               "type": "integer"
             },
-            "description": "How many records to include in each page \nIf nothing was sent default is 10,000"
+            "description": "How many records to include in each page\nIf nothing was sent default is 10,000"
           },
           {
             "name": "orderBy",
@@ -1861,7 +1878,7 @@
             "schema": {
               "type": "object"
             },
-            "description": "object with 2 parameters: \n- field (String) = Symbol (case-insensitive) \n- direction (Asc, Desc) \nIf nothing or invalid field was sent the default is [Symbol, Asc]"
+            "description": "object with 2 parameters:\n- field (String) = Symbol (case-insensitive)\n- direction (Asc, Desc)\nIf nothing or invalid field was sent the default is [Symbol, Asc]"
           }
         ],
         "responses": {
@@ -2573,13 +2590,14 @@
                   "properties": {
                     "id": {
                       "type": "string",
-                      "pattern": "^-?[0-9]+$",
-                      "description": "Instrument Group ID \n(Not part of the request body of Create Instrument Group)"
+                      "pattern": "^[0-9]+$",
+                      "description": "Instrument Group ID\n(Not part of the request body of Create Instrument Group)"
                     },
                     "name": {
                       "type": "string",
                       "maxLength": 30,
-                      "description": "Name of the Group \nMay contain values that are not unique \nMax length - 30 chars and can contain ASCII (32 -126)"
+                      "pattern": "^[ -~]*$",
+                      "description": "Name of the Group\nMay contain values that are not unique"
                     }
                   }
                 },
@@ -3249,7 +3267,7 @@
                   "properties": {
                     "id": {
                       "type": "string",
-                      "pattern": "^-?[0-9]+$",
+                      "pattern": "^[0-9]+$",
                       "description": "Calendar ID (Not part of request body in Create/ Update Calendar)"
                     },
                     "lastEodDate": {
@@ -3325,16 +3343,18 @@
                         "properties": {
                           "id": {
                             "type": "string",
-                            "pattern": "^-?[0-9]+$",
+                            "pattern": "^[0-9]+$",
                             "description": "Account ID (Not part of request body in Create/ Update Account)"
                           },
                           "name": {
                             "type": "string",
-                            "description": "Account Name \nMax length = 50 and ASCII (32 -126) chars only"
+                            "maxLength": 50,
+                            "pattern": "^[ -~]*$",
+                            "description": "Account Name"
                           },
                           "mpId": {
                             "type": "string",
-                            "pattern": "^-?[0-9]+$",
+                            "pattern": "^[0-9]+$",
                             "description": "MP ID (System generated identifier of MPs)"
                           },
                           "status": {
@@ -3412,16 +3432,18 @@
                   "properties": {
                     "id": {
                       "type": "string",
-                      "pattern": "^-?[0-9]+$",
+                      "pattern": "^[0-9]+$",
                       "description": "Account ID (Not part of request body in Create/ Update Account)"
                     },
                     "name": {
                       "type": "string",
-                      "description": "Account Name \nMax length = 50 and ASCII (32 -126) chars only"
+                      "maxLength": 50,
+                      "pattern": "^[ -~]*$",
+                      "description": "Account Name"
                     },
                     "mpId": {
                       "type": "string",
-                      "pattern": "^-?[0-9]+$",
+                      "pattern": "^[0-9]+$",
                       "description": "MP ID (System generated identifier of MPs)"
                     },
                     "status": {
@@ -3527,16 +3549,18 @@
                   "properties": {
                     "id": {
                       "type": "string",
-                      "pattern": "^-?[0-9]+$",
+                      "pattern": "^[0-9]+$",
                       "description": "Account ID (Not part of request body in Create/ Update Account)"
                     },
                     "name": {
                       "type": "string",
-                      "description": "Account Name \nMax length = 50 and ASCII (32 -126) chars only"
+                      "maxLength": 50,
+                      "pattern": "^[ -~]*$",
+                      "description": "Account Name"
                     },
                     "mpId": {
                       "type": "string",
-                      "pattern": "^-?[0-9]+$",
+                      "pattern": "^[0-9]+$",
                       "description": "MP ID (System generated identifier of MPs)"
                     },
                     "status": {
@@ -3626,16 +3650,18 @@
                   "properties": {
                     "id": {
                       "type": "string",
-                      "pattern": "^-?[0-9]+$",
+                      "pattern": "^[0-9]+$",
                       "description": "Account ID (Not part of request body in Create/ Update Account)"
                     },
                     "name": {
                       "type": "string",
-                      "description": "Account Name \nMax length = 50 and ASCII (32 -126) chars only"
+                      "maxLength": 50,
+                      "pattern": "^[ -~]*$",
+                      "description": "Account Name"
                     },
                     "mpId": {
                       "type": "string",
-                      "pattern": "^-?[0-9]+$",
+                      "pattern": "^[0-9]+$",
                       "description": "MP ID (System generated identifier of MPs)"
                     },
                     "status": {
@@ -3851,7 +3877,8 @@
                     "properties": {
                       "label": {
                         "type": "string",
-                        "description": "apiKey label, max length =64"
+                        "maxLength": 64,
+                        "description": "apiKey label"
                       },
                       "permissions": {
                         "type": "array",
@@ -3861,7 +3888,7 @@
                       },
                       "mpId": {
                         "type": "string",
-                        "pattern": "^-?[0-9]+$",
+                        "pattern": "^[0-9]+$",
                         "description": "MP ID"
                       },
                       "cancelOnDisconnect": {
@@ -4094,7 +4121,8 @@
                   "properties": {
                     "label": {
                       "type": "string",
-                      "description": "apiKey label, max length =64"
+                      "maxLength": 64,
+                      "description": "apiKey label"
                     },
                     "permissions": {
                       "type": "array",
@@ -4105,7 +4133,7 @@
                     },
                     "mpId": {
                       "type": "string",
-                      "pattern": "^-?[0-9]+$",
+                      "pattern": "^[0-9]+$",
                       "description": "MP ID"
                     },
                     "cancelOnDisconnect": {
@@ -4255,19 +4283,23 @@
                     "properties": {
                       "name": {
                         "type": "string",
-                        "description": "Unique MP Name \nMax length = 30 and ASCII (32 -126) chars only"
+                        "maxLength": 30,
+                        "pattern": "^[ -~]*$",
+                        "description": "Unique MP Name"
                       },
                       "id": {
                         "type": "string",
-                        "pattern": "^-?[0-9]+$",
+                        "pattern": "^[0-9]+$",
                         "description": "MP ID (Not part of request body in Create/ Update MP)"
                       },
                       "compIds": {
                         "type": "array",
                         "items": {
-                          "type": "string"
+                          "type": "string",
+                          "maxLength": 16,
+                          "pattern": "^[ -~]*$"
                         },
-                        "description": "Unique compId list to be configured on FIX connection for that MP. \nMax length = 16 and ASCII (32 -126) chars only"
+                        "description": "Unique compId list to be configured on FIX connection for that MP"
                       }
                     }
                   }
@@ -4323,18 +4355,22 @@
                   "properties": {
                     "name": {
                       "type": "string",
-                      "description": "Unique MP Name \nMax length = 30 and ASCII (32 -126) chars only"
+                      "maxLength": 30,
+                      "pattern": "^[ -~]*$",
+                      "description": "Unique MP Name"
                     },
                     "compIds": {
                       "type": "array",
                       "items": {
-                        "type": "string"
+                        "type": "string",
+                        "maxLength": 16,
+                        "pattern": "^[ -~]*$"
                       },
-                      "description": "Unique compId list to be configured on FIX connection for that MP. \nMax length = 16 and ASCII (32 -126) chars only"
+                      "description": "Unique compId list to be configured on FIX connection for that MP"
                     },
                     "id": {
                       "type": "string",
-                      "pattern": "^-?[0-9]+$",
+                      "pattern": "^[0-9]+$",
                       "description": "MP ID (Not part of request body in Create/ Update MP)"
                     }
                   }
@@ -4431,18 +4467,22 @@
                   "properties": {
                     "name": {
                       "type": "string",
-                      "description": "Unique MP Name \nMax length = 30 and ASCII (32 -126) chars only"
+                      "maxLength": 30,
+                      "pattern": "^[ -~]*$",
+                      "description": "Unique MP Name"
                     },
                     "compIds": {
                       "type": "array",
                       "items": {
-                        "type": "string"
+                        "type": "string",
+                        "maxLength": 16,
+                        "pattern": "^[ -~]*$"
                       },
-                      "description": "Unique compId list to be configured on FIX connection for that MP. \nMax length = 16 and ASCII (32 -126) chars only"
+                      "description": "Unique compId list to be configured on FIX connection for that MP"
                     },
                     "id": {
                       "type": "string",
-                      "pattern": "^-?[0-9]+$",
+                      "pattern": "^[0-9]+$",
                       "description": "MP ID (Not part of request body in Create/ Update MP)"
                     }
                   }
@@ -4502,7 +4542,9 @@
                   "properties": {
                     "name": {
                       "type": "string",
-                      "description": "Unique MP Name \nMax length = 30 and ASCII (32 -126) chars only"
+                      "maxLength": 30,
+                      "pattern": "^[ -~]*$",
+                      "description": "Unique MP Name"
                     },
                     "compId": {
                       "type": "array",
@@ -4512,7 +4554,7 @@
                     },
                     "id": {
                       "type": "string",
-                      "pattern": "^-?[0-9]+$",
+                      "pattern": "^[0-9]+$",
                       "description": "MP ID (Not part of request body in Create/ Update MP)"
                     },
                     "projectId": {
@@ -4613,7 +4655,8 @@
                   "properties": {
                     "label": {
                       "type": "string",
-                      "description": "apiKey label, max length =64"
+                      "maxLength": 64,
+                      "description": "apiKey label"
                     },
                     "permissions": {
                       "type": "array",
@@ -4624,7 +4667,7 @@
                     },
                     "mpGroupId": {
                       "type": "string",
-                      "pattern": "^-?[0-9]+$",
+                      "pattern": "^[0-9]+$",
                       "description": "MP ID"
                     },
                     "secret": {
@@ -4719,7 +4762,8 @@
                     "properties": {
                       "label": {
                         "type": "string",
-                        "description": "apiKey label, max length =64"
+                        "maxLength": 64,
+                        "description": "apiKey label"
                       },
                       "permissions": {
                         "type": "array",
@@ -4729,7 +4773,7 @@
                       },
                       "mpGroupId": {
                         "type": "string",
-                        "pattern": "^-?[0-9]+$",
+                        "pattern": "^[0-9]+$",
                         "description": "MP ID"
                       },
                       "apiKey": {
@@ -4822,7 +4866,8 @@
                     },
                     "label": {
                       "type": "string",
-                      "description": "apiKey label, max length =64"
+                      "maxLength": 64,
+                      "description": "apiKey label"
                     },
                     "permissions": {
                       "type": "array",
@@ -4833,7 +4878,7 @@
                     },
                     "mpGroupId": {
                       "type": "string",
-                      "pattern": "^-?[0-9]+$",
+                      "pattern": "^[0-9]+$",
                       "description": "MP ID"
                     }
                   }
@@ -5017,7 +5062,8 @@
                   "properties": {
                     "label": {
                       "type": "string",
-                      "description": "apiKey label, max length =64"
+                      "maxLength": 64,
+                      "description": "apiKey label"
                     },
                     "permissions": {
                       "type": "array",
@@ -5028,7 +5074,7 @@
                     },
                     "mpGroupId": {
                       "type": "string",
-                      "pattern": "^-?[0-9]+$",
+                      "pattern": "^[0-9]+$",
                       "description": "MP ID"
                     },
                     "apiKey": {
@@ -5086,20 +5132,22 @@
                   "properties": {
                     "id": {
                       "type": "string",
-                      "pattern": "^-?[0-9]+$",
+                      "pattern": "^[0-9]+$",
                       "description": "MP Group ID (Not part of request body in Create/ Update MP Group)"
                     },
                     "name": {
                       "type": "string",
-                      "description": "Unique MP Group Name, max length =50 charecters and ASCII (32 -126) chars only"
+                      "maxLength": 50,
+                      "pattern": "^[ -~]*$",
+                      "description": "Unique MP Group Name"
                     },
                     "mpIds": {
                       "type": "array",
                       "items": {
                         "type": "string",
-                        "pattern": "^-?[0-9]+$"
+                        "pattern": "^[0-9]+$"
                       },
-                      "description": "List of MPs that this group contains, for all MPs, do not send this property."
+                      "description": "List of MPs that this group contains, for all MPs, do not send this property"
                     }
                   }
                 },
@@ -5187,18 +5235,20 @@
                     "properties": {
                       "id": {
                         "type": "string",
-                        "pattern": "^-?[0-9]+$",
+                        "pattern": "^[0-9]+$",
                         "description": "MP Group ID (Not part of request body in Create/ Update MP Group)"
                       },
                       "name": {
                         "type": "string",
-                        "description": "Unique MP Group Name, max length =50 charecters and ASCII (32 -126) chars only"
+                        "maxLength": 50,
+                        "pattern": "^[ -~]*$",
+                        "description": "Unique MP Group Name"
                       },
                       "mpIds": {
                         "type": "array",
                         "items": {
                           "type": "string",
-                          "pattern": "^-?[0-9]+$"
+                          "pattern": "^[0-9]+$"
                         }
                       }
                     }
@@ -5341,20 +5391,22 @@
                   "properties": {
                     "id": {
                       "type": "string",
-                      "pattern": "^-?[0-9]+$",
+                      "pattern": "^[0-9]+$",
                       "description": "MP Group ID (Not part of request body in Create/ Update MP Group)"
                     },
                     "name": {
                       "type": "string",
-                      "description": "Unique MP Group Name, max length =50 charecters and ASCII (32 -126) chars only"
+                      "maxLength": 50,
+                      "pattern": "^[ -~]*$",
+                      "description": "Unique MP Group Name"
                     },
                     "mpIds": {
                       "type": "array",
                       "items": {
                         "type": "string",
-                        "pattern": "^-?[0-9]+$"
+                        "pattern": "^[0-9]+$"
                       },
-                      "description": "List of MPs that this group contains, for all MPs, do not send this property."
+                      "description": "List of MPs that this group contains, for all MPs, do not send this property"
                     }
                   }
                 },
@@ -6194,7 +6246,7 @@
                 "properties": {
                   "mpId": {
                     "type": "string",
-                    "pattern": "^-?[0-9]+$",
+                    "pattern": "^[0-9]+$",
                     "description": "mpId"
                   },
                   "orderType": {
@@ -6219,7 +6271,7 @@
                   },
                   "instrumentId": {
                     "type": "string",
-                    "pattern": "^-?[0-9]+$",
+                    "pattern": "^[0-9]+$",
                     "description": "Instrument id for the order"
                   },
                   "mpOrderId": {
@@ -6452,7 +6504,7 @@
                   "properties": {
                     "orderId": {
                       "type": "string",
-                      "pattern": "^-?[0-9]+$",
+                      "pattern": "^[0-9]+$",
                       "description": "Exchange order ID to be replaced"
                     },
                     "originalOrderId": {
@@ -6515,12 +6567,12 @@
                 "properties": {
                   "orderId": {
                     "type": "string",
-                    "pattern": "^-?[0-9]+$",
+                    "pattern": "^[0-9]+$",
                     "description": "Exchange order ID to be replaced"
                   },
                   "instrumentId": {
                     "type": "string",
-                    "pattern": "^-?[0-9]+$",
+                    "pattern": "^[0-9]+$",
                     "description": "Original order instrument Id"
                   },
                   "quantity": {
@@ -6692,7 +6744,7 @@
                 "properties": {
                   "targetScope": {
                     "type": "string",
-                    "description": "The field specifies the scope the mass cancel request applies to \nAllowed values: \nInstrument - cancel scope is a single instrument \nAll - cancel scope is all instruments \nIf not sent “Instrument” is considered."
+                    "description": "The field specifies the scope the mass cancel request applies to\nAllowed values:\nInstrument - cancel scope is a single instrument\nAll - cancel scope is all instruments\nIf not sent “Instrument” is considered"
                   },
                   "instrumentId": {
                     "type": "string",
@@ -6703,11 +6755,11 @@
                     "items": {
                       "type": "string"
                     },
-                    "description": "The system cancels the type of active entities mentioned in the request. \nArray of below values: \nOrder - cancels all orders \nRFQ - cancels all RFQs and all active quotes belong to them \nQuote - cancels all Quotes \n`(NEW v1.31.0)` AllegedTrade - cancels all Alleged Trades \nIf not exist, system considers as targetEntities = [‘Order’]"
+                    "description": "The system cancels the type of active entities mentioned in the request\nArray of below values:\nOrder - cancels all orders\nRFQ - cancels all RFQs and all active quotes belong to them\nQuote - cancels all Quotes\n`(NEW v1.31.0)` AllegedTrade - cancels all Alleged Trades\nIf not exist, system considers as targetEntities = [‘Order’]"
                   },
                   "mpId": {
                     "type": "string",
-                    "description": "MP ID to mass cancel the target entities \nNot sending this parameter will mass cancel for all MPs"
+                    "description": "MP ID to mass cancel the target entities\nNot sending this parameter will mass cancel for all MPs"
                   },
                   "targetParties": {
                     "type": "array",
@@ -6728,7 +6780,7 @@
                         }
                       }
                     },
-                    "description": "targetParties to target the mass cancel orders. \nIf multiple targetParty objects are in a request, the system cancels orders with all targetParties. \nFor example: \nOrder1 has party1 \nOrder2 has party1 and party2 \nOrder3 has party1, party2 and party3 \nOrder4 has no parties \nA mass cancel request with targetParties(party1 and party2) will cancel order 2 and 3. \n`CHANGED v1.46.0` Note: For accounts: id=accountId, source=D, role=1001 source=P, role=24"
+                    "description": "targetParties to target the mass cancel orders\nIf multiple targetParty objects are in a request, the system cancels orders with all targetParties\nFor example:\nOrder1 has party1\nOrder2 has party1 and party2\nOrder3 has party1, party2 and party3\nOrder4 has no parties\nA mass cancel request with targetParties(party1 and party2) will cancel order 2 and 3\n`CHANGED v1.46.0` Note: For accounts: id=accountId, source=D, role=1001 source=P, role=24"
                   },
                   "cancelReason": {
                     "type": "string",
@@ -6845,7 +6897,7 @@
                   },
                   "type": {
                     "type": "string",
-                    "description": "Type of the trade entry \nSee the table below for supported values",
+                    "description": "Type of the trade entry\nSee the table below for supported values",
                     "enum": [
                       "Block",
                       "Other",
@@ -7076,12 +7128,12 @@
                 "properties": {
                   "instrumentId": {
                     "type": "string",
-                    "pattern": "^-?[0-9]+$",
+                    "pattern": "^[0-9]+$",
                     "description": "Instrument ID to cancel the orders"
                   },
                   "matchId": {
                     "type": "string",
-                    "pattern": "^-?[0-9]+$",
+                    "pattern": "^[0-9]+$",
                     "description": "Trade Id to cancel"
                   }
                 },
@@ -7185,7 +7237,7 @@
                         "TICK_MIN_MAX"
                       ]
                     },
-                    "description": "Excluded prices from Price Bands."
+                    "description": "Excluded prices from Price Bands"
                   }
                 },
                 "required": [
@@ -7290,14 +7342,14 @@
                 "properties": {
                   "instrumentId": {
                     "type": "string",
-                    "pattern": "^-?[0-9]+$",
+                    "pattern": "^[0-9]+$",
                     "description": "Instrument ID to apply the cash distribution"
                   },
                   "amount": {
                     "type": "string",
                     "format": "decimal",
                     "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
-                    "description": "Cash Amount per share \nMaximum 10 decimal places"
+                    "description": "Cash Amount per share\nMaximum 10 decimal places"
                   }
                 },
                 "required": [
@@ -7394,20 +7446,20 @@
                 "properties": {
                   "instrumentId": {
                     "type": "string",
-                    "pattern": "^-?[0-9]+$",
+                    "pattern": "^[0-9]+$",
                     "description": "Instrument ID to apply the cash distribution"
                   },
                   "ratioOld": {
                     "type": "string",
                     "format": "decimal",
                     "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
-                    "description": "ratioOld of the stock dividend/forward split \nMaximum 10 decimal places \nIf 1 new share is issued for each 2 shares held, ratioOld=2 and ratioNew=1. (European Convention)"
+                    "description": "ratioOld of the stock dividend/forward split\nMaximum 10 decimal places\nIf 1 new share is issued for each 2 shares held, ratioOld=2 and ratioNew=1. (European Convention)"
                   },
                   "ratioNew": {
                     "type": "string",
                     "format": "decimal",
                     "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
-                    "description": "ratioNew of the stock dividend/forward split \nMaximum 10 decimal places \nSee description of ratioOld for more details"
+                    "description": "ratioNew of the stock dividend/forward split\nMaximum 10 decimal places\nSee description of ratioOld for more details"
                   },
                   "quantityRounding": {
                     "type": "string",
@@ -7465,7 +7517,7 @@
               "type": "string",
               "format": "date"
             },
-            "description": "Search for the CAs that exDate < dateTo \nFormat: YYYY-MM-DD",
+            "description": "Search for the CAs that exDate < dateTo\nFormat: YYYY-MM-DD",
             "example": "2025-08-01"
           },
           {
@@ -7474,7 +7526,7 @@
             "required": false,
             "schema": {
               "type": "string",
-              "pattern": "^-?[0-9]+$"
+              "pattern": "^[0-9]+$"
             },
             "description": "Instrument Id",
             "example": "78"
@@ -7486,7 +7538,7 @@
             "schema": {
               "type": "string"
             },
-            "description": "object with 2 parameters: \nfield (String) \ndirection (Asc, Desc) direction \nIf nothing or invalid field was sent the default is [exDate, Desc]"
+            "description": "object with 2 parameters:\nfield (String)\ndirection (Asc, Desc) direction\nIf nothing or invalid field was sent the default is [exDate, Desc]"
           },
           {
             "name": "limit",
@@ -7494,10 +7546,10 @@
             "required": false,
             "schema": {
               "type": "string",
-              "pattern": "^-?[0-9]+$",
+              "pattern": "^[0-9]+$",
               "x-max-value": 100
             },
-            "description": "How many records to include in each page \nIf nothing was sent default is 25"
+            "description": "How many records to include in each page\nIf nothing was sent default is 25"
           },
           {
             "name": "offset",
@@ -7505,9 +7557,9 @@
             "required": false,
             "schema": {
               "type": "string",
-              "pattern": "^-?[0-9]+$"
+              "pattern": "^[0-9]+$"
             },
-            "description": "Which record to start send from (if you want page 3 and there are 50 records per page offset should be 150) \nIf nothing was sent default is 0 (=first record)"
+            "description": "Which record to start send from (if you want page 3 and there are 50 records per page offset should be 150)\nIf nothing was sent default is 0 (=first record)"
           }
         ],
         "responses": {
@@ -7745,13 +7797,13 @@
                 "properties": {
                   "instrumentId": {
                     "type": "string",
-                    "pattern": "^-?[0-9]+$",
+                    "pattern": "^[0-9]+$",
                     "description": "Instrument ID to apply the cash distribution"
                   },
                   "exDate": {
                     "type": "string",
                     "format": "date",
-                    "description": "Ex-date of the corporate action \nformat YYYY-MM-DD \nIf not exist, delete all adjustment factors of the instrument"
+                    "description": "Ex-date of the corporate action\nformat YYYY-MM-DD\nIf not exist, delete all adjustment factors of the instrument"
                   }
                 },
                 "required": [
@@ -7842,7 +7894,7 @@
                   "updateReferencePrice": {
                     "type": "boolean",
                     "default": true,
-                    "description": "Update the reference price with the settlement price \ndefault is True"
+                    "description": "Update the reference price with the settlement price\ndefault is True"
                   }
                 },
                 "required": [
@@ -8032,15 +8084,15 @@
                     "type": "array",
                     "items": {
                       "type": "string",
-                      "pattern": "^-?[0-9]+$"
+                      "pattern": "^[0-9]+$"
                     },
-                    "description": "List of instruments to halt \nNote: not sending this parameter will halt the trading for all instruments"
+                    "description": "List of instruments to halt\nNote: not sending this parameter will halt the trading for all instruments"
                   },
                   "instrumentGroupIds": {
                     "type": "array",
                     "items": {
                       "type": "string",
-                      "pattern": "^-?[0-9]+$"
+                      "pattern": "^[0-9]+$"
                     },
                     "description": "List of instrument groups to halt"
                   },
@@ -8048,7 +8100,7 @@
                     "type": "integer",
                     "format": "int64",
                     "x-epoch-unit": "seconds",
-                    "description": "When to halt the trading \nIf this is not sent, the halt will be immediate — Unix epoch time in seconds"
+                    "description": "When to halt the trading\nIf this is not sent, the halt will be immediate — Unix epoch time in seconds"
                   },
                   "scheduleResumeTime": {
                     "type": "integer",
@@ -8058,7 +8110,7 @@
                   },
                   "scheduleResumeTimeInterval": {
                     "type": "string",
-                    "pattern": "^-?[0-9]+$",
+                    "pattern": "^[0-9]+$",
                     "description": "When to resume trading in minutes Interval"
                   }
                 }
@@ -8151,15 +8203,15 @@
                     "type": "array",
                     "items": {
                       "type": "string",
-                      "pattern": "^-?[0-9]+$"
+                      "pattern": "^[0-9]+$"
                     },
-                    "description": "List of instruments to resume \nNote: not sending this parameter will resume the trading for all instruments"
+                    "description": "List of instruments to resume\nNote: not sending this parameter will resume the trading for all instruments"
                   },
                   "instrumentGroupIds": {
                     "type": "array",
                     "items": {
                       "type": "string",
-                      "pattern": "^-?[0-9]+$"
+                      "pattern": "^[0-9]+$"
                     },
                     "description": "List of instrument groups to resume"
                   }
