@@ -3,7 +3,7 @@
   "info": {
     "title": "Exberry Admin API",
     "version": "1.58.0",
-    "description": "Exberry Admin API allows managing exchange static data (instruments, trading calendars and more) as well as sending operational commands (EOD, halt trading and more).\n\n**Sandbox environment endpoint:** `https://admin-api.uat.exberry-uat.io`\n\n**Guidelines:**\n- All numbers are stringified unless explicitly mentioned otherwise. Stringified integers are marked with pattern `^-?[0-9]+$`; stringified decimals with `format: decimal`.\n- Optional fields should be omitted from request if not required\n- System ignores any additional parameter that are sent on request body but was not specified in this document\n\n**HTTP Error Codes:**\n- 400: Maximum request size exceeded (60KB) or Invalid JSON\n- 401: Invalid token\n- 403: Authentication and authorization errors\n- 404: Route not found\n- 500: Any other error\n- 503: System not available\n- 504: Timeout",
+    "description": "Exberry Admin API allows managing exchange static data (instruments, trading calendars and more) as well as sending operational commands (EOD, halt trading and more).\n\n**Sandbox environment endpoint:** `https://admin-api.uat.exberry-uat.io`\n\n**Guidelines:**\n- All numbers are stringified unless explicitly mentioned otherwise. Stringified integers are marked with pattern `^-?[0-9]+$`; stringified decimals with `format: decimal`.\n- Optional fields should be omitted from request if not required\n- System ignores any additional parameter that are sent on request body but was not specified in this document\n\n**HTTP Error Codes:**\n- 400: Maximum request size exceeded (60KB) or Invalid JSON\n- 401: Invalid token\n- 403: Authentication and authorization errors\n- 404: Route not found\n- 500: Any other error\n- 503: System not available\n- 504: Timeout\n\n**Maker-Checker approval flow** (to activate, contact the operations team):\n\nThe maker-checker process is a workflow that requires the approval of at least two individuals to agree on an action. It involves two parties:\n\n- **Maker**: the person who initiates the action (can always see their own requests and reject them)\n- **Checker**: the person who approves the action (cannot approve their own request)\n\nWhen a user requests an action (like update or create an instrument), the change does not happen immediately - e.g. it won't be shown in the instrument list. The change takes place only after approval. A super user with the right permission can override this flow.\n\nFor any action that is part of the flow, the request can include a `comment` field (String) - the maker's explanation of what the action contains, giving the checker the change context.\n\nInstead of the regular response message, any API request involved in the flow returns a `MakerCheckerRequest` entity (see the model below). Its `data` property contains the data model of the requested action, identical to the API specification for that action without maker-checker activated.",
     "contact": {
       "name": "Exberry Support",
       "url": "https://exberry.io"
@@ -66,7 +66,8 @@
             "x-enumDescriptions": {
               "Active": "activity through the account is allowed",
               "Blocked": "activity through the account is not allowed"
-            }
+            },
+            "description": "If empty, treated as Active"
           }
         },
         "required": [
@@ -196,7 +197,7 @@
                     "EQUILIBRIUM_PRICE": "execution based on single calculated equilibrium price",
                     "EQUILIBRIUM_PRICE_2": "execution based on single calculated equilibrium price"
                   },
-                  "description": "Auction matching algorithm,"
+                  "description": "Auction matching algorithm,\n\nNote: Contact Exberry to get more details on the exact price calculation."
                 },
                 "eventsModes": {
                   "type": "array",
@@ -388,6 +389,19 @@
           "priority": {
             "type": "integer",
             "description": "Rule priority - the highest is more important."
+          },
+          "rounding": {
+            "type": "string",
+            "enum": [
+              "NONE",
+              "UP",
+              "DOWN"
+            ],
+            "x-enumDescriptions": {
+              "NONE": "default, Do not round",
+              "UP": "Round up using both price precision and tick size table",
+              "DOWN": "Round down using both price precision and tick size table"
+            }
           }
         },
         "required": [
@@ -399,7 +413,8 @@
           "value",
           "actionType",
           "actionValue",
-          "priority"
+          "priority",
+          "rounding"
         ]
       },
       "ErrorResponse": {
@@ -963,6 +978,96 @@
         },
         "description": "Instrument underlying assets type. Applicability depends on category/subCategory."
       },
+      "MakerCheckerRequest": {
+        "type": "object",
+        "description": "Approval-request envelope returned by write operations INSTEAD of the entity when the maker-checker flow is enabled on the exchange. The change takes effect only after a checker approves the request.",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "The Id of the maker checker request"
+          },
+          "data": {
+            "type": "object",
+            "description": "Data model of the reuqest object (i.e. instrument details etc.)"
+          },
+          "requestType": {
+            "type": "string",
+            "enum": [
+              "CreateInstrument",
+              "UpdateIntrument",
+              "CreateInstrumentGroup",
+              "UpdateInstrumentGroup",
+              "CreateCalendar",
+              "UpdateCalendar",
+              "CreateMP",
+              "UpdateMP",
+              "CreateMPGroup",
+              "UpdateMPGroup",
+              "CreateAPIKey",
+              "UpdateAPIKey",
+              "DeleteAPIKey",
+              "CreateTrader",
+              "UpdateTrader",
+              "CreateCBR",
+              "UpdateCBR",
+              "CreateTickSize",
+              "UpdateTickSize",
+              "TradeEntry",
+              "TradeCancellation",
+              "TradeAdjustment",
+              "SetSettlementPrice",
+              "SetTickReferencePrice",
+              "Halt",
+              "Resume",
+              "MassCancel",
+              "EOD",
+              "CancelOrder",
+              "ArchiveInstrument",
+              "CreateAccount",
+              "UpdateAccount",
+              "CashDistributionAdjustment",
+              "SecurityDistributionAdjustment",
+              "UpdateCandleAdjustments",
+              "DeleteCandleAdjustments",
+              "ClearSchedule"
+            ],
+            "description": "The type of the reuqest"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "Pending",
+              "Approved",
+              "Canceled"
+            ],
+            "description": "The status of the request"
+          },
+          "makerComment": {
+            "type": "string",
+            "description": "The comment of the reuqest"
+          },
+          "makerUserId": {
+            "type": "string",
+            "description": "The user id of the reuqest"
+          },
+          "makerUserType": {
+            "type": "string",
+            "enum": [
+              "Admin",
+              "Exchange Trader"
+            ],
+            "description": "The maker user type"
+          },
+          "timestamp": {
+            "type": "string",
+            "description": "The time when the request was created \nformat: YYYT-MM-DDTHH:MM:SS.SSSS"
+          },
+          "name": {
+            "type": "string",
+            "description": "Entity name"
+          }
+        }
+      },
       "MarketParticipant": {
         "type": "object",
         "properties": {
@@ -984,6 +1089,13 @@
             "type": "string",
             "description": "Description \nMax length = 100 and ASCII (32 -126) chars only"
           },
+          "compIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Unique compId list to be configured on FIX connection for that MP. \nMax length = 16 and ASCII (32 -126) chars only"
+          },
           "status": {
             "type": "string",
             "enum": [
@@ -1002,34 +1114,50 @@
           },
           "selfTradeAction": {
             "type": "string",
-            "description": "One of the below values: \n- CancelIncomingOrder \n- CancelRestingOrder \n- CancelBothOrders \nIf not configured→ STP will work only on order level"
+            "enum": [
+              "CancelIncomingOrder",
+              "CancelRestingOrder",
+              "CancelBothOrders"
+            ],
+            "description": "If not configured→ STP will work only on order level"
           },
           "tradeReporting": {
-            "type": "string",
-            "description": "Details below"
-          },
-          "lockedInMpIds": {
-            "type": "array",
-            "items": {
-              "type": "integer"
+            "type": "object",
+            "properties": {
+              "lockedInMpIds": {
+                "type": "array",
+                "items": {
+                  "type": "integer"
+                },
+                "description": "A list of mpIds the MP can designate as counterparty when creating locked-in trades reports \n[0] = All MPs (All = current and future MPs)"
+              },
+              "allegedMpIds": {
+                "type": "array",
+                "items": {
+                  "type": "integer"
+                },
+                "description": "A list of mpIds the MP can designate as counterparty when creating alleged trades reports & alleged transfers \n[0] = All MPs (All = current and future MPs)"
+              },
+              "thirdPartyLockedInMpIds": {
+                "type": "array",
+                "items": {
+                  "type": "array",
+                  "items": {
+                    "type": "integer"
+                  },
+                  "minItems": 2,
+                  "maxItems": 2
+                },
+                "description": "A list of mpId pairs the MP can designate as buy MP and sell MP when creating locked-in trades reports as a third-party MP reporting the trade. \n[0,0] = All MPs with All MPs \n[0, 100] = mpId 100 with All MPs"
+              }
             },
-            "description": "A list of mpIds the MP can designate as counterparty when creating locked-in trades reports \n[0] = All MPs (All = current and future MPs)"
-          },
-          "allegedMpIds": {
-            "type": "array",
-            "items": {
-              "type": "integer"
-            },
-            "description": "A list of mpIds the MP can designate as counterparty when creating alleged trades reports & alleged transfers \n[0] = All MPs (All = current and future MPs)"
-          },
-          "thirdPartyLockedInMpIds": {
-            "type": "integer",
-            "description": "A list of mpId pairs the MP can designate as buy MP and sell MP when creating locked-in trades reports as a third-party MP reporting the trade. \n[0,0] = All MPs with All MPs \n[0, 100] = mpId 100 with All MPs"
+            "required": [
+              "lockedInMpIds"
+            ]
           }
         },
         "required": [
-          "name",
-          "lockedInMpIds"
+          "name"
         ]
       },
       "MpApiKey": {
@@ -1113,6 +1241,15 @@
             "type": "boolean",
             "description": "- true: when there is disconnection all resting orders, active Quotes and active Alleged Trades are canceled \nNote: The field can set to be true only when \"market-service:market:place_order\" OR \"market-service:market:submit_rfq_quotes\" OR \"market-service:market:create_trade_report\" permission is included"
           },
+          "allowedInstruments": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^-?[0-9]+$"
+            },
+            "description": "This apiKey grant access only with this list of instruments",
+            "deprecated": true
+          },
           "allowedInstrumentGroupIds": {
             "type": "array",
             "items": {
@@ -1120,6 +1257,15 @@
               "pattern": "^-?[0-9]+$"
             },
             "description": "This apiKey grants access only to the instruments in these groups. \nNote: Only one of allowedInstruments and allowedInstrumentGroupIds is allowed"
+          },
+          "blockedInstruments": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^-?[0-9]+$"
+            },
+            "description": "This apiKey grant access with all instruments except this list of instruments",
+            "deprecated": true
           },
           "accountId": {
             "type": "string",
@@ -1713,7 +1859,7 @@
             "in": "query",
             "required": false,
             "schema": {
-              "type": "string"
+              "type": "object"
             },
             "description": "object with 2 parameters: \n- field (String) = Symbol (case-insensitive) \n- direction (Asc, Desc) \nIf nothing or invalid field was sent the default is [Symbol, Asc]"
           }
@@ -3200,7 +3346,8 @@
                             "x-enumDescriptions": {
                               "Active": "activity through the account is allowed",
                               "Blocked": "activity through the account is not allowed"
-                            }
+                            },
+                            "description": "If empty, treated as Active"
                           }
                         }
                       }
@@ -3286,7 +3433,8 @@
                       "x-enumDescriptions": {
                         "Active": "activity through the account is allowed",
                         "Blocked": "activity through the account is not allowed"
-                      }
+                      },
+                      "description": "If empty, treated as Active"
                     }
                   }
                 },
@@ -3400,7 +3548,8 @@
                       "x-enumDescriptions": {
                         "Active": "activity through the account is allowed",
                         "Blocked": "activity through the account is not allowed"
-                      }
+                      },
+                      "description": "If empty, treated as Active"
                     }
                   }
                 },
@@ -3498,7 +3647,8 @@
                       "x-enumDescriptions": {
                         "Active": "activity through the account is allowed",
                         "Blocked": "activity through the account is not allowed"
-                      }
+                      },
+                      "description": "If empty, treated as Active"
                     }
                   }
                 },
@@ -4116,7 +4266,8 @@
                         "type": "array",
                         "items": {
                           "type": "string"
-                        }
+                        },
+                        "description": "Unique compId list to be configured on FIX connection for that MP. \nMax length = 16 and ASCII (32 -126) chars only"
                       }
                     }
                   }
@@ -4178,7 +4329,8 @@
                       "type": "array",
                       "items": {
                         "type": "string"
-                      }
+                      },
+                      "description": "Unique compId list to be configured on FIX connection for that MP. \nMax length = 16 and ASCII (32 -126) chars only"
                     },
                     "id": {
                       "type": "string",
@@ -4285,7 +4437,8 @@
                       "type": "array",
                       "items": {
                         "type": "string"
-                      }
+                      },
+                      "description": "Unique compId list to be configured on FIX connection for that MP. \nMax length = 16 and ASCII (32 -126) chars only"
                     },
                     "id": {
                       "type": "string",
