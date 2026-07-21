@@ -1818,10 +1818,17 @@
             "schema": {
               "type": "array",
               "items": {
-                "type": "string"
+                "type": "string",
+                "enum": [
+                  "ACTIVE",
+                  "DISABLED",
+                  "ARCHIVED"
+                ]
               }
             },
-            "description": "Search by the list of statuses\n- ACTIVE\n- DISABLED\n- ARCHIVED"
+            "description": "Search by the list of statuses\n\nPass multiple values with bracket notation, e.g.: `?statuses[]=ACTIVE&statuses[]=DISABLED`",
+            "style": "form",
+            "explode": true
           },
           {
             "name": "categories",
@@ -1833,7 +1840,9 @@
                 "type": "string"
               }
             },
-            "description": "Search by catagory\nfor values see in the Category List - here"
+            "description": "Search by catagory\nfor values see in the Category List - here\n\nPass multiple values with bracket notation: `?categories[]={}&categories[]={}`",
+            "style": "form",
+            "explode": true
           },
           {
             "name": "subCategory",
@@ -1876,9 +1885,28 @@
             "in": "query",
             "required": false,
             "schema": {
-              "type": "object"
+              "type": "object",
+              "properties": {
+                "field": {
+                  "type": "string",
+                  "enum": [
+                    "symbol"
+                  ],
+                  "description": "Case-insensitive. Default: symbol"
+                },
+                "direction": {
+                  "type": "string",
+                  "enum": [
+                    "Asc",
+                    "Desc"
+                  ],
+                  "description": "Default: Asc"
+                }
+              }
             },
-            "description": "object with 2 parameters:\n- field (String) = Symbol (case-insensitive)\n- direction (Asc, Desc)\nIf nothing or invalid field was sent the default is [Symbol, Asc]"
+            "description": "Sort order. Usage: `?orderBy[field]=symbol&orderBy[direction]=Desc`\n\nIf not sent, defaults to [symbol, Asc]",
+            "style": "deepObject",
+            "explode": true
           }
         ],
         "responses": {
@@ -6744,7 +6772,15 @@
                 "properties": {
                   "targetScope": {
                     "type": "string",
-                    "description": "The field specifies the scope the mass cancel request applies to\nAllowed values:\nInstrument - cancel scope is a single instrument\nAll - cancel scope is all instruments\nIf not sent “Instrument” is considered"
+                    "enum": [
+                      "Instrument",
+                      "All"
+                    ],
+                    "x-enumDescriptions": {
+                      "Instrument": "cancel scope is a single instrument",
+                      "All": "cancel scope is all instruments"
+                    },
+                    "description": "The field specifies the scope the mass cancel request applies to\n\nIf not sent “Instrument” is considered"
                   },
                   "instrumentId": {
                     "type": "string",
@@ -6753,9 +6789,21 @@
                   "targetEntities": {
                     "type": "array",
                     "items": {
-                      "type": "string"
+                      "type": "string",
+                      "enum": [
+                        "Order",
+                        "RFQ",
+                        "Quote",
+                        "AllegedTrade"
+                      ],
+                      "x-enumDescriptions": {
+                        "Order": "cancels all orders",
+                        "RFQ": "cancels all RFQs and all active quotes belong to them",
+                        "Quote": "cancels all Quotes",
+                        "AllegedTrade": "cancels all Alleged Trades"
+                      }
                     },
-                    "description": "The system cancels the type of active entities mentioned in the request\nArray of below values:\nOrder - cancels all orders\nRFQ - cancels all RFQs and all active quotes belong to them\nQuote - cancels all Quotes\n`(NEW v1.31.0)` AllegedTrade - cancels all Alleged Trades\nIf not exist, system considers as targetEntities = [‘Order’]"
+                    "description": "The system cancels the type of active entities mentioned in the request\n\nIf not exist, system considers as targetEntities = [‘Order’]"
                   },
                   "mpId": {
                     "type": "string",
