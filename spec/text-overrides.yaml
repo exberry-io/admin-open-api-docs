@@ -48,6 +48,8 @@ info:
 
     Instead of the regular response message, any API request involved in the flow returns a `MakerCheckerRequest` entity (see the model below). Its `data` property contains the data model of the requested action, identical to the API specification for that action without maker-checker activated.
 tags:
+  Accounts: |-
+    Manage trading accounts. An account belongs to a market participant and controls how activity (Client / House) is booked.
   Authentication: Authenticate with the email and password provided by the Exberry team to receive a JWT token. Use it as a Bearer token on every other request. Regenerate before expiresIn elapses.
   Instruments: |-
     Instruments API allows you to:

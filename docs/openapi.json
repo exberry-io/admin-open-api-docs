@@ -2,7 +2,7 @@
   "openapi": "3.0.3",
   "info": {
     "title": "Exberry Admin API",
-    "version": "1.58.0",
+    "version": "1.59.0",
     "description": "Exberry Admin API allows managing exchange static data (instruments, trading calendars and more) as well as sending operational commands (EOD, halt trading and more).\n\n**Sandbox environment endpoint:** `https://admin-api.uat.exberry-uat.io`\n\n**Guidelines:**\n- All numbers are stringified unless explicitly mentioned otherwise. Stringified integers are marked with pattern `^[0-9]+$`; stringified decimals with `format: decimal`.\n- Optional fields should be omitted from request if not required\n- System ignores any additional parameter that are sent on request body but was not specified in this document\n\n**HTTP Error Codes:**\n- 400: Maximum request size exceeded (60KB) or Invalid JSON\n- 401: Invalid token\n- 403: Authentication and authorization errors\n- 404: Route not found\n- 500: Any other error\n- 503: System not available\n- 504: Timeout\n\n**Maker-Checker approval flow** (to activate, contact the operations team):\n\nThe maker-checker process is a workflow that requires the approval of at least two individuals to agree on an action. It involves two parties:\n\n- **Maker**: the person who initiates the action (can always see their own requests and reject them)\n- **Checker**: the person who approves the action (cannot approve their own request)\n\nWhen a user requests an action (like update or create an instrument), the change does not happen immediately - e.g. it won't be shown in the instrument list. The change takes place only after approval. A super user with the right permission can override this flow.\n\nFor any action that is part of the flow, the request can include a `comment` field (String) - the maker's explanation of what the action contains, giving the checker the change context.\n\nInstead of the regular response message, any API request involved in the flow returns a `MakerCheckerRequest` entity (see the model below). Its `data` property contains the data model of the requested action, identical to the API specification for that action without maker-checker activated.",
     "contact": {
       "name": "Exberry Support",
@@ -275,6 +275,18 @@
               ]
             },
             "description": "list of auctions setup"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "Active",
+              "Disabled"
+            ],
+            "x-enumDescriptions": {
+              "Active": "Calendar can be used with instruments",
+              "Disabled": "Calendar can not be used with instruments"
+            },
+            "description": "Status of Calendar\n\nIf not exist, treated as Active"
           }
         },
         "required": [
@@ -343,27 +355,18 @@
           },
           "status": {
             "type": "string",
-            "enum": [
-              "ACTIVE",
-              "DISABLED"
-            ],
-            "x-enumDescriptions": {
-              "ACTIVE": "CBR is active",
-              "DISABLED": "CBR is not active"
-            }
+            "description": "Available values:\n`(CHANGED v1.59.0)` ACTIVE Active - CBR is active\n`(CHANGED v1.59.0)` DISABLED Disabled - CBR is not active"
           },
           "type": {
             "type": "string",
             "enum": [
               "MARKET_RATE",
               "DYNAMIC_MARKET_RATE",
-              "MARKET_RATE_POTENTIAL_EXECUTION",
               "DYNAMIC_MARKET_RATE_POTENTIAL_EXECUTION"
             ],
             "x-enumDescriptions": {
               "MARKET_RATE": "monitor market rate changes since the previous day's close rate or daily settlement price if exists.",
-              "DYNAMIC_MARKET_RATE": "monitor market rate changes since the previous trade rate (last price",
-              "MARKET_RATE_POTENTIAL_EXECUTION": "monitor potential executions that may impact market rate changes since the previous day's close rate or daily settlement price if exists.",
+              "DYNAMIC_MARKET_RATE": "monitor market rate changes since the previous trade rate (last price) MARKET_RATE_POTENTIAL_EXECUTION - monitor potential executions that may impact market rate changes since the previous day's close rate or daily settlement price if exists.",
               "DYNAMIC_MARKET_RATE_POTENTIAL_EXECUTION": "monitor potential executions that may impact market rate changes since the previous trade rate (last price"
             }
           },
@@ -386,7 +389,7 @@
           },
           "actionValue": {
             "type": "number",
-            "description": "“HALT_TRADING” - If empty - halt the trading for that instrument permanently (can only be resumed manually) Else time in minutes\n“NOTIFY_BACKOFFICE” - always empty\n`NEW`“RESUME_AUCTION” - always empty"
+            "description": "For acton HALT_TRADING- Leave empty to halt trading indefinitely (manual resume required). Otherwise, specify the duration in minutes"
           },
           "priority": {
             "type": "integer",
@@ -414,7 +417,6 @@
           "type",
           "value",
           "actionType",
-          "actionValue",
           "priority",
           "rounding"
         ]
@@ -905,6 +907,18 @@
             "type": "string",
             "pattern": "^[0-9]+$",
             "description": "Parent Group ID"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "Active",
+              "Disabled"
+            ],
+            "x-enumDescriptions": {
+              "Active": "Instrument Group can be used with instruments",
+              "Disabled": "Instrument Group can not be used with instruments"
+            },
+            "description": "If not exist, treated as Active"
           }
         },
         "required": [
@@ -1161,10 +1175,7 @@
                 },
                 "description": "A list of mpId pairs the MP can designate as buy MP and sell MP when creating locked-in trades reports as a third-party MP reporting the trade\n[0,0] = All MPs with All MPs\n[0, 100] = mpId 100 with All MPs"
               }
-            },
-            "required": [
-              "lockedInMpIds"
-            ]
+            }
           }
         },
         "required": [
@@ -1181,11 +1192,13 @@
           },
           "apiKey": {
             "type": "string",
-            "description": "apiKey"
+            "description": "apiKey\nSystem generated on Create API response",
+            "readOnly": true
           },
           "secret": {
             "type": "string",
-            "description": "secret key"
+            "description": "secret key\nSystem generated on Create API response",
+            "readOnly": true
           },
           "mpId": {
             "type": "string",
@@ -1251,16 +1264,7 @@
           },
           "cancelOnDisconncet": {
             "type": "boolean",
-            "description": "true: when there is disconnection all resting orders, active Quotes and active Alleged Trades are canceled\nNote: The field can set to be true only when \"market-service:market:place_order\" OR \"market-service:market:submit_rfq_quotes\" OR \"market-service:market:create_trade_report\" permission is included"
-          },
-          "allowedInstruments": {
-            "type": "array",
-            "items": {
-              "type": "string",
-              "pattern": "^[0-9]+$"
-            },
-            "description": "This apiKey grant access only with this list of instruments",
-            "deprecated": true
+            "description": "true: when there is disconnection all resting orders, active Quotes and active Alleged Trades are canceled\nIf not sent default = false\nNote: The field can set to be true only when one of the below permission is included:\n- \"market-service:market:place_order\"\n- \"market-service:market:submit_rfq_quotes\"\n- \"market-service:market:create_trade_report\""
           },
           "allowedInstrumentGroupIds": {
             "type": "array",
@@ -1268,30 +1272,29 @@
               "type": "string",
               "pattern": "^[0-9]+$"
             },
-            "description": "This apiKey grants access only to the instruments in these groups\nNote: Only one of allowedInstruments and allowedInstrumentGroupIds is allowed"
-          },
-          "blockedInstruments": {
-            "type": "array",
-            "items": {
-              "type": "string",
-              "pattern": "^[0-9]+$"
-            },
-            "description": "This apiKey grant access with all instruments except this list of instruments",
-            "deprecated": true
+            "description": "This apiKey grants access only to the instruments in these groups"
           },
           "accountId": {
             "type": "string",
             "pattern": "^[0-9]+$",
             "description": "Defines the Exchange Account the API key has access/visibility to\nIf not defined, the API Key has access/visibility to all accounts"
+          },
+          "ownerType": {
+            "type": "string",
+            "description": "MP or MP_GROUP",
+            "readOnly": true
+          },
+          "ownerId": {
+            "type": "string",
+            "pattern": "^[0-9]+$",
+            "description": "Id of apiKey owner (same as mpId/ mpGroupId)",
+            "readOnly": true
           }
         },
         "required": [
           "label",
-          "apiKey",
-          "secret",
           "mpId",
-          "permissions",
-          "cancelOnDisconncet"
+          "permissions"
         ]
       },
       "MpGroup": {
@@ -1322,6 +1325,18 @@
               "pattern": "^[0-9]+$"
             },
             "description": "List of MPs that this group contains, for all MPs, do not send this property"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "Active",
+              "Disabled"
+            ],
+            "x-enumDescriptions": {
+              "Active": "API authentication is allowed",
+              "Disabled": "API authentication is not allowed"
+            },
+            "description": "If not exist, treated as Active"
           }
         },
         "required": [
@@ -1382,6 +1397,18 @@
             "maxLength": 30,
             "description": "Unique TickSize name"
           },
+          "status": {
+            "type": "string",
+            "enum": [
+              "Active",
+              "Disabled"
+            ],
+            "x-enumDescriptions": {
+              "Active": "Tick Size Table can be used with instruments",
+              "Disabled": "Tick Size Table can not be used with instruments"
+            },
+            "description": "If not exist, treated as Active"
+          },
           "items": {
             "type": "array",
             "items": {
@@ -1389,10 +1416,14 @@
               "properties": {
                 "price": {
                   "type": "string",
+                  "format": "decimal",
+                  "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
                   "description": "Price to- use the price when order price ≤ to this price and > from previous price (this array need to be sorted)\nIf empty this will apply to all order prices above the previous price"
                 },
                 "tickSize": {
-                  "type": "number",
+                  "type": "string",
+                  "format": "decimal",
+                  "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
                   "description": "Tick size to be used for current price level"
                 }
               },
@@ -1401,7 +1432,7 @@
                 "tickSize"
               ]
             },
-            "description": "list of items\n(NEW v1.40.0)\nitems are stored after sorting by their prices(ascending order)"
+            "description": "list of items, stored by their prices (ascending order)"
           }
         },
         "required": [
@@ -1494,6 +1525,10 @@
       "description": "MP Group allows you to configure read only access for group of market participants (or all of them).\nMP Groups API allows you to:\n- Get single MP Group details\n- Get the list of all MP Groups with their details\n- Create MP Group\n- Update existing MP Group\nMP Group Object"
     },
     {
+      "name": "Accounts",
+      "description": "Manage trading accounts. An account belongs to a market participant and controls how activity (Client / House) is booked."
+    },
+    {
       "name": "CBR",
       "description": "Circuit Breaker Rules (CBR) API allows you to:\n- Get single CBR details\n- Get the list of all CBRs with their details\n- Create a CBR\n- Update existing CBRs"
     },
@@ -1529,14 +1564,14 @@
                       "description": "Token to be used for any API call"
                     },
                     "expiresIn": {
-                      "type": "integer",
+                      "type": "string",
                       "description": "Expiration time in seconds"
                     }
                   }
                 },
                 "example": {
                   "token": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6IlJqa3hORGN4T0RKRlF6VkNPRGd3UVRreFJUZEZNa05HT0VJMU9FRkNSall6UVRsR1JEWXhOZyJ9.eyJodHRwczovL2JhY2tvZmZpY2UvZXhjaGFuZ2VzIjpbeyJpZCI6MzAsImxhYmVsIjoiRXhjaGFuZ2UgTWFzdGVyIn0seyJpZCI6MTEwLCJsYWJlbCI6Ik1hc3RlcjIgTmV3In0seyJpZCI6MSwibGFiZWwiOiJBbnRvbiB0ZXN0In1dLCJodHRwczovL2JhY2tvZmZpY2UvY3VycmVudEV4Y2hhbmdlSWQiOjMwLCJodHRwczovL2JhY2tvZmZpY2UvZW1haWwiOiJkdWRpLmtyaXNoZXJAb20yLmNvbSIsImlzcyI6Imh0dHBzOi8vc3RhZ2luZy1hZG1pbi1leGNoYW5nZS1vbTIuZXUuYXV0aDAuY29tLyIsInN1YiI6ImF1dGgwfDVkZDI0ZDMzZDM1MTFkMGYwM2E3OGE3MSIsImF1ZCI6ImJvLWdhdGV3YXkiLCJpYXQiOjE2MTgxNDg1NzUsImV4cCI6MTYxODIzNDk3NSwiYXpwIjoiSDNOS05yN2hoQkJwenhVWDhtcEVnVlNQVHcyQ0hJMHQiLCJzY29wZSI6Ikluc3RydW1lbnQvY3JlYXRlIEluc3RydW1lbnQvbGlzdCBJbnN0cnVtZW50L3VwZGF0ZSBDYWxlbmRhci9jcmVhdGUgQ2FsZW5kYXIvbGlzdCBDYWxlbmRhci91cGRhdGUgQ0JSL2NyZWF0ZSBDQlIvbGlzdCBDQlIvdXBkYXRlIE1QL2NyZWF0ZSBNUC9saXN0IE1QL3VwZGF0ZSBBUElLZXkvY3JlYXRlIEFQSUtleS9saXN0IEFQSUtleS9kZWxldGUiLCJndHkiOiJwYXNzd29yZCJ9.Bbstf15TUFkCZNBMA72_hLAUon-km1riTCgR-XjxLK3L_zzW1Sz7PJPtgr6jxF_jxsJKC7HLYB0_QUMGIhbUIDFHKOpRyALy57svEPphH86ge0xMxnugzLBwEMjipiIBUc07wHO3jTmVHKcjZqp-2jghejnIVNcmAxCRBit4VeEkh0N94jhmqFyjlVSKy6NP8Dx2xa8fmG6eO_9K9QqN8mdR1-_hXMwjCy8DGPE7wLHqyNW1Tk-H0X4v2XiSw_yX4fwy3x4i65WK9UAzJ1GQ-4WTvT9RX7DPNBW3v_jMAhJ7991ry7cKHlacjk-Ro3Q0Fm-nXacQMN4K4zF2H9Q_YA",
-                  "expiresIn": 86400
+                  "expiresIn": "86400"
                 }
               }
             }
@@ -1771,7 +1806,7 @@
               "type": "string",
               "format": "date"
             },
-            "description": "Search for the instrument that startdate < dateTo. Format:YYYY-MM-DDThh:mm:ss[.SSS]"
+            "description": "Search for the instrument that startdate < dateTo\nFormat:YYYY-MM-DDThh:mm:ss[.SSS]"
           },
           {
             "name": "stopDateFrom",
@@ -1781,7 +1816,7 @@
               "type": "string",
               "format": "date"
             },
-            "description": "Search for the instrument that stopdate ≥ dateFrom. Format:YYYY-MM-DDThh:mm:ss[.SSS]\nFor instruments without stopDate, send - `0000-01-01T00:00`"
+            "description": "Search for the instrument that stopdate ≥ dateFrom\nFormat:YYYY-MM-DDThh:mm:ss[.SSS]\nFor instruments without stopDate, send - `0000-01-01T00:00`"
           },
           {
             "name": "stopDateTo",
@@ -1791,7 +1826,7 @@
               "type": "string",
               "format": "date"
             },
-            "description": "Search for the instrument that stopdate < dateTo. Format:YYYY-MM-DDThh:mm:ss[.SSS]"
+            "description": "Search for the instrument that stopdate < dateTo\nFormat:YYYY-MM-DDThh:mm:ss[.SSS]"
           },
           {
             "name": "product",
@@ -1818,15 +1853,10 @@
             "schema": {
               "type": "array",
               "items": {
-                "type": "string",
-                "enum": [
-                  "ACTIVE",
-                  "DISABLED",
-                  "ARCHIVED"
-                ]
+                "type": "string"
               }
             },
-            "description": "Search by the list of statuses\n\nPass multiple values with bracket notation, e.g.: `?statuses[]=ACTIVE&statuses[]=DISABLED`",
+            "description": "Search by the list of statuses\n- ACTIVE\n- DISABLED\n- ARCHIVED\n\nPass multiple values with bracket notation: `?statuses[]={}&statuses[]={}`",
             "style": "form",
             "explode": true
           },
@@ -1888,23 +1918,14 @@
               "type": "object",
               "properties": {
                 "field": {
-                  "type": "string",
-                  "enum": [
-                    "symbol"
-                  ],
-                  "description": "Case-insensitive. Default: symbol"
+                  "type": "string"
                 },
                 "direction": {
-                  "type": "string",
-                  "enum": [
-                    "Asc",
-                    "Desc"
-                  ],
-                  "description": "Default: Asc"
+                  "type": "string"
                 }
               }
             },
-            "description": "Sort order. Usage: `?orderBy[field]=symbol&orderBy[direction]=Desc`\n\nIf not sent, defaults to [symbol, Asc]",
+            "description": "object with 2 parameters:\n- field (String) = symbol (case-insensitive)\n- direction (Asc, Desc)\nIf nothing or invalid field was sent the default is [symbol, Asc]\nSample: `orderBy[field]=symbol`",
             "style": "deepObject",
             "explode": true
           }
@@ -2448,7 +2469,25 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/InstrumentGroup"
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "pattern": "^[0-9]+$",
+                      "description": "Instrument Group ID\n(Not part of the request body of Create Instrument Group)"
+                    },
+                    "name": {
+                      "type": "string",
+                      "maxLength": 30,
+                      "pattern": "^[ -~]*$",
+                      "description": "Name of the Group\nMay contain values that are not unique"
+                    },
+                    "parentGroupId": {
+                      "type": "string",
+                      "pattern": "^[0-9]+$",
+                      "description": "Parent Group ID"
+                    }
+                  }
                 },
                 "example": {
                   "id": "39",
@@ -2527,7 +2566,25 @@
                     "instrumentGroups": {
                       "type": "array",
                       "items": {
-                        "$ref": "#/components/schemas/InstrumentGroup"
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "pattern": "^[0-9]+$",
+                            "description": "Instrument Group ID\n(Not part of the request body of Create Instrument Group)"
+                          },
+                          "name": {
+                            "type": "string",
+                            "maxLength": 30,
+                            "pattern": "^[ -~]*$",
+                            "description": "Name of the Group\nMay contain values that are not unique"
+                          },
+                          "parentGroupId": {
+                            "type": "string",
+                            "pattern": "^[0-9]+$",
+                            "description": "Parent Group ID"
+                          }
+                        }
                       }
                     },
                     "totalCount": {
@@ -2710,7 +2767,25 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/InstrumentGroup"
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "pattern": "^[0-9]+$",
+                      "description": "Instrument Group ID\n(Not part of the request body of Create Instrument Group)"
+                    },
+                    "name": {
+                      "type": "string",
+                      "maxLength": 30,
+                      "pattern": "^[ -~]*$",
+                      "description": "Name of the Group\nMay contain values that are not unique"
+                    },
+                    "parentGroupId": {
+                      "type": "string",
+                      "pattern": "^[0-9]+$",
+                      "description": "Parent Group ID"
+                    }
+                  }
                 },
                 "example": {
                   "id": "35",
@@ -3347,425 +3422,6 @@
         }
       }
     },
-    "/api/accounts": {
-      "get": {
-        "operationId": "Get_Accounts",
-        "summary": "Get Accounts",
-        "tags": [
-          "MPs"
-        ],
-        "description": "This API allows to get a list of all accounts with their details.",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "Success",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "accounts": {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "properties": {
-                          "id": {
-                            "type": "string",
-                            "pattern": "^[0-9]+$",
-                            "description": "Account ID (Not part of request body in Create/ Update Account)"
-                          },
-                          "name": {
-                            "type": "string",
-                            "maxLength": 50,
-                            "pattern": "^[ -~]*$",
-                            "description": "Account Name"
-                          },
-                          "mpId": {
-                            "type": "string",
-                            "pattern": "^[0-9]+$",
-                            "description": "MP ID (System generated identifier of MPs)"
-                          },
-                          "status": {
-                            "type": "string",
-                            "enum": [
-                              "Active",
-                              "Blocked"
-                            ],
-                            "x-enumDescriptions": {
-                              "Active": "activity through the account is allowed",
-                              "Blocked": "activity through the account is not allowed"
-                            },
-                            "description": "If empty, treated as Active"
-                          }
-                        }
-                      }
-                    },
-                    "totalCount": {
-                      "type": "string"
-                    }
-                  }
-                },
-                "example": {
-                  "accounts": [
-                    {
-                      "id": "18",
-                      "name": "Acc1",
-                      "mpId": "11",
-                      "status": "Active"
-                    },
-                    {
-                      "id": "294",
-                      "name": "Acc2",
-                      "mpId": "11",
-                      "status": "Active"
-                    }
-                  ],
-                  "totalCount": "4"
-                }
-              }
-            }
-          },
-          "400": {
-            "$ref": "#/components/responses/BadRequest"
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
-          "403": {
-            "$ref": "#/components/responses/Forbidden"
-          },
-          "404": {
-            "$ref": "#/components/responses/NotFound"
-          },
-          "500": {
-            "$ref": "#/components/responses/ServerError"
-          }
-        }
-      },
-      "post": {
-        "operationId": "Create_Account",
-        "summary": "Create Account",
-        "tags": [
-          "MPs"
-        ],
-        "description": "This API allows to create a new Account.\n\nID will be returned in the response, this ID is the unique identifier of the Account and should be used when sending update commands.\n\nNote: this ID can be retrieved via Get Accounts API.\n\n#### Create Account - Error Codes\n\n| Code | Message |\n| --- | --- |\n| 1 | System is unavailable |\n| 100 | Missing or invalid parameter: \\[FieldName\\] |\n| 101 | \\[FieldName\\] not found  <br>  <br>Can’t Block the account when InProcess Transaction Requests exist |\n| 102 | CHANGED 1.57.0  <br>~~\\[FieldName\\] already exists~~  <br>\\[FieldName\\] already exists for id: \\[accountId\\] |\n| 10001 | Permission denied |",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "Success",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "id": {
-                      "type": "string",
-                      "pattern": "^[0-9]+$",
-                      "description": "Account ID (Not part of request body in Create/ Update Account)"
-                    },
-                    "name": {
-                      "type": "string",
-                      "maxLength": 50,
-                      "pattern": "^[ -~]*$",
-                      "description": "Account Name"
-                    },
-                    "mpId": {
-                      "type": "string",
-                      "pattern": "^[0-9]+$",
-                      "description": "MP ID (System generated identifier of MPs)"
-                    },
-                    "status": {
-                      "type": "string",
-                      "enum": [
-                        "Active",
-                        "Blocked"
-                      ],
-                      "x-enumDescriptions": {
-                        "Active": "activity through the account is allowed",
-                        "Blocked": "activity through the account is not allowed"
-                      },
-                      "description": "If empty, treated as Active"
-                    }
-                  }
-                },
-                "example": {
-                  "id": "3389",
-                  "name": "Acc01",
-                  "mpId": "11",
-                  "status": "Active"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Failure",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "code": {
-                      "type": "integer"
-                    },
-                    "message": {
-                      "type": "string"
-                    }
-                  }
-                },
-                "example": {
-                  "code": 100,
-                  "message": "Missing or invalid parameter: mpId"
-                }
-              }
-            }
-          },
-          "400": {
-            "$ref": "#/components/responses/BadRequest"
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
-          "403": {
-            "$ref": "#/components/responses/Forbidden"
-          },
-          "404": {
-            "$ref": "#/components/responses/NotFound"
-          }
-        },
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/Account"
-              },
-              "example": {
-                "name": "Account 2",
-                "mpId": "14"
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/accounts/{id}": {
-      "get": {
-        "operationId": "Get_Account",
-        "summary": "Get Account",
-        "tags": [
-          "MPs"
-        ],
-        "description": "This API allows to get a specific account details.",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            },
-            "description": "Account ID (Not part of request body in Create/ Update Account)"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Success",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "id": {
-                      "type": "string",
-                      "pattern": "^[0-9]+$",
-                      "description": "Account ID (Not part of request body in Create/ Update Account)"
-                    },
-                    "name": {
-                      "type": "string",
-                      "maxLength": 50,
-                      "pattern": "^[ -~]*$",
-                      "description": "Account Name"
-                    },
-                    "mpId": {
-                      "type": "string",
-                      "pattern": "^[0-9]+$",
-                      "description": "MP ID (System generated identifier of MPs)"
-                    },
-                    "status": {
-                      "type": "string",
-                      "enum": [
-                        "Active",
-                        "Blocked"
-                      ],
-                      "x-enumDescriptions": {
-                        "Active": "activity through the account is allowed",
-                        "Blocked": "activity through the account is not allowed"
-                      },
-                      "description": "If empty, treated as Active"
-                    }
-                  }
-                },
-                "example": {
-                  "id": "18",
-                  "name": "Acc1",
-                  "mpId": "11",
-                  "status": "Active"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Failure",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "code": {
-                      "type": "integer"
-                    },
-                    "message": {
-                      "type": "string"
-                    }
-                  }
-                },
-                "example": {
-                  "code": 101,
-                  "message": "Account not found"
-                }
-              }
-            }
-          },
-          "400": {
-            "$ref": "#/components/responses/BadRequest"
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
-          "403": {
-            "$ref": "#/components/responses/Forbidden"
-          },
-          "404": {
-            "$ref": "#/components/responses/NotFound"
-          }
-        }
-      },
-      "put": {
-        "operationId": "Update_Account",
-        "summary": "Update Account",
-        "tags": [
-          "MPs"
-        ],
-        "description": "This API allows to update existing Account.\n\n#### Update Account - Error Codes\n\nAll errors in Create Account section and the below:\n\n| Code | Message |\n| --- | --- |\n| 100 | Can’t change Ledger Account when active \\[EntityName\\] exist |\n| 101 | MP can’t be changed  <br>Account type can’t be changed |",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            },
-            "description": "Account ID (Not part of request body in Create/ Update Account)"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Success",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "id": {
-                      "type": "string",
-                      "pattern": "^[0-9]+$",
-                      "description": "Account ID (Not part of request body in Create/ Update Account)"
-                    },
-                    "name": {
-                      "type": "string",
-                      "maxLength": 50,
-                      "pattern": "^[ -~]*$",
-                      "description": "Account Name"
-                    },
-                    "mpId": {
-                      "type": "string",
-                      "pattern": "^[0-9]+$",
-                      "description": "MP ID (System generated identifier of MPs)"
-                    },
-                    "status": {
-                      "type": "string",
-                      "enum": [
-                        "Active",
-                        "Blocked"
-                      ],
-                      "x-enumDescriptions": {
-                        "Active": "activity through the account is allowed",
-                        "Blocked": "activity through the account is not allowed"
-                      },
-                      "description": "If empty, treated as Active"
-                    }
-                  }
-                },
-                "example": {
-                  "id": "3389",
-                  "name": "Acc01",
-                  "mpId": "11",
-                  "status": "Active"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Failure",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "code": {
-                      "type": "integer"
-                    },
-                    "message": {
-                      "type": "string"
-                    }
-                  }
-                },
-                "example": {
-                  "code": 101,
-                  "message": "MP can't be changed"
-                }
-              }
-            }
-          },
-          "400": {
-            "$ref": "#/components/responses/BadRequest"
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
-          "403": {
-            "$ref": "#/components/responses/Forbidden"
-          },
-          "404": {
-            "$ref": "#/components/responses/NotFound"
-          }
-        },
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/Account"
-              },
-              "example": {
-                "name": "Account 5",
-                "mpId": "14"
-              }
-            }
-          }
-        }
-      }
-    },
     "/api/mps/{mpId}/api-keys": {
       "post": {
         "operationId": "Create_API_Key",
@@ -3794,15 +3450,17 @@
                   "$ref": "#/components/schemas/MpApiKey"
                 },
                 "example": {
-                  "label": "label1",
+                  "apiKey": "8da9ef02-5b50-4f5f-9516-ac97a5d1b3e7",
+                  "ownerId": "11",
+                  "ownerType": "MP",
+                  "label": "label10",
                   "permissions": [
                     "market-service:market:order_book_depth",
                     "market-service:market:order_book_state"
                   ],
-                  "cancelOnDisconnect": false,
-                  "mpId": "2087505414",
-                  "secret": "7a7c7be8e3ff908bcc722765bcf6183f4997123e72b3361e4a17739f3adc08c6",
-                  "apiKey": "62e36fe1-36a5-4e0d-86d4-ba8049e8464c"
+                  "secret": "d5f9abd2aa2917e996bcc4c9da35b9ffb95c4a884a5c7845d8e7e1d9ebb8324d",
+                  "mpId": "11",
+                  "cancelOnDisconnect": false
                 }
               }
             }
@@ -3901,54 +3559,33 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "type": "object",
-                    "properties": {
-                      "label": {
-                        "type": "string",
-                        "maxLength": 64,
-                        "description": "apiKey label"
-                      },
-                      "permissions": {
-                        "type": "array",
-                        "items": {
-                          "type": "string"
-                        }
-                      },
-                      "mpId": {
-                        "type": "string",
-                        "pattern": "^[0-9]+$",
-                        "description": "MP ID"
-                      },
-                      "cancelOnDisconnect": {
-                        "type": "boolean"
-                      },
-                      "apiKey": {
-                        "type": "string",
-                        "description": "apiKey"
-                      }
-                    }
+                    "$ref": "#/components/schemas/MpApiKey"
                   }
                 },
                 "example": [
                   {
-                    "label": "COD",
+                    "apiKey": "e532a272-1496-4b0a-a19e-b8a76922e03e",
+                    "ownerId": "11",
+                    "ownerType": "MP",
+                    "label": "FIX",
                     "permissions": [
-                      "market-service:market:place_order",
-                      "market-service:market:order_book_depth"
+                      "market-service:market:market_data",
+                      "market-service:market:place_order"
                     ],
-                    "mpId": "2087505414",
-                    "cancelOnDisconnect": true,
-                    "apiKey": "a1074947-67b5-4572-b43b-78486cdcb9e4"
+                    "mpId": "11",
+                    "cancelOnDisconnect": false
                   },
                   {
-                    "label": "all",
+                    "apiKey": "ee0350ca-a0c4-40ea-bb31-4e540fcc8645",
+                    "ownerId": "11",
+                    "ownerType": "MP",
+                    "label": "label1",
                     "permissions": [
-                      "market-service:market:order_book_depth",
-                      "market-service:market:order_book_state"
+                      "reporting:mp:orders",
+                      "reporting:mp:trades"
                     ],
-                    "mpId": "2087505414",
-                    "cancelOnDisconnect": false,
-                    "apiKey": "2d96ddcc-4db1-427c-a31e-57d793f23bb7"
+                    "mpId": "11",
+                    "cancelOnDisconnect": false
                   }
                 ]
               }
@@ -4016,7 +3653,7 @@
             "schema": {
               "type": "string"
             },
-            "description": "apiKey"
+            "description": "apiKey \nSystem generated on Create API response"
           }
         ],
         "responses": {
@@ -4028,18 +3665,16 @@
                   "$ref": "#/components/schemas/MpApiKey"
                 },
                 "example": {
-                  "apiKey": "187f0443-ead8-4582-95ca-73db52bc972b",
-                  "label": "label_acc1_22",
+                  "apiKey": "8da9ef02-5b50-4f5f-9516-ac97a5d1b3e7",
+                  "ownerId": "11",
+                  "ownerType": "MP",
+                  "label": "label10",
                   "permissions": [
                     "market-service:market:order_book_depth",
                     "market-service:market:order_book_state"
                   ],
-                  "mpId": "14",
-                  "cancelOnDisconnect": false,
-                  "allowedInstrumentGroupIds": [
-                    "33"
-                  ],
-                  "accountId": "39"
+                  "mpId": "11",
+                  "cancelOnDisconnect": true
                 }
               }
             }
@@ -4136,7 +3771,7 @@
             "schema": {
               "type": "string"
             },
-            "description": "apiKey"
+            "description": "apiKey \nSystem generated on Create API response"
           }
         ],
         "responses": {
@@ -4145,43 +3780,19 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "label": {
-                      "type": "string",
-                      "maxLength": 64,
-                      "description": "apiKey label"
-                    },
-                    "permissions": {
-                      "type": "array",
-                      "items": {
-                        "type": "string"
-                      },
-                      "description": "Permissions grantted for the apiKey. A table of available values is listed below"
-                    },
-                    "mpId": {
-                      "type": "string",
-                      "pattern": "^[0-9]+$",
-                      "description": "MP ID"
-                    },
-                    "cancelOnDisconnect": {
-                      "type": "boolean"
-                    },
-                    "apiKey": {
-                      "type": "string",
-                      "description": "apiKey"
-                    }
-                  }
+                  "$ref": "#/components/schemas/MpApiKey"
                 },
                 "example": {
-                  "label": "label1",
+                  "apiKey": "8da9ef02-5b50-4f5f-9516-ac97a5d1b3e7",
+                  "ownerId": "11",
+                  "ownerType": "MP",
+                  "label": "label10",
                   "permissions": [
                     "market-service:market:order_book_depth",
                     "market-service:market:order_book_state"
                   ],
-                  "mpId": "2087505414",
-                  "cancelOnDisconnect": true,
-                  "apiKey": "9ee9fdd8-bd37-4d98-9e1b-41bf0cd0a0e2"
+                  "mpId": "11",
+                  "cancelOnDisconnect": true
                 }
               }
             }
@@ -4246,7 +3857,7 @@
             "schema": {
               "type": "string"
             },
-            "description": "apiKey"
+            "description": "apiKey \nSystem generated on Create API response"
           }
         ],
         "responses": {
@@ -4291,80 +3902,6 @@
       }
     },
     "/api/mps": {
-      "get": {
-        "operationId": "Get_MPs",
-        "summary": "Get MPs",
-        "tags": [
-          "MPs"
-        ],
-        "description": "This API allows to get a list of all MPs with their details.",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "Success",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "properties": {
-                      "name": {
-                        "type": "string",
-                        "maxLength": 30,
-                        "pattern": "^[ -~]*$",
-                        "description": "Unique MP Name"
-                      },
-                      "id": {
-                        "type": "string",
-                        "pattern": "^[0-9]+$",
-                        "description": "MP ID (Not part of request body in Create/ Update MP)"
-                      },
-                      "compIds": {
-                        "type": "array",
-                        "items": {
-                          "type": "string",
-                          "maxLength": 16,
-                          "pattern": "^[ -~]*$"
-                        },
-                        "description": "Unique compId list to be configured on FIX connection for that MP"
-                      }
-                    }
-                  }
-                },
-                "example": [
-                  {
-                    "name": "MP2 Tst1",
-                    "id": "2087505299"
-                  },
-                  {
-                    "name": "MP1 Test",
-                    "compIds": [
-                      "compId1"
-                    ],
-                    "id": "2087505361"
-                  }
-                ]
-              }
-            }
-          },
-          "400": {
-            "$ref": "#/components/responses/BadRequest"
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
-          "403": {
-            "$ref": "#/components/responses/Forbidden"
-          },
-          "404": {
-            "$ref": "#/components/responses/NotFound"
-          },
-          "500": {
-            "$ref": "#/components/responses/ServerError"
-          }
-        }
-      },
       "post": {
         "operationId": "Create_MP",
         "summary": "Create MP",
@@ -4464,64 +4001,61 @@
             }
           }
         }
-      }
-    },
-    "/api/mps/{mpId}": {
+      },
       "get": {
-        "operationId": "Get_MP",
-        "summary": "Get MP",
+        "operationId": "Get_MPs",
+        "summary": "Get MPs",
         "tags": [
           "MPs"
         ],
-        "description": "This API allows to get a single MP details.",
-        "parameters": [
-          {
-            "name": "mpId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            },
-            "description": "The mpId identifier"
-          }
-        ],
+        "description": "This API allows to get a list of all MPs with their details.",
+        "parameters": [],
         "responses": {
           "200": {
             "description": "Success",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "name": {
-                      "type": "string",
-                      "maxLength": 30,
-                      "pattern": "^[ -~]*$",
-                      "description": "Unique MP Name"
-                    },
-                    "compIds": {
-                      "type": "array",
-                      "items": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "name": {
                         "type": "string",
-                        "maxLength": 16,
-                        "pattern": "^[ -~]*$"
+                        "maxLength": 30,
+                        "pattern": "^[ -~]*$",
+                        "description": "Unique MP Name"
                       },
-                      "description": "Unique compId list to be configured on FIX connection for that MP"
-                    },
-                    "id": {
-                      "type": "string",
-                      "pattern": "^[0-9]+$",
-                      "description": "MP ID (Not part of request body in Create/ Update MP)"
+                      "id": {
+                        "type": "string",
+                        "pattern": "^[0-9]+$",
+                        "description": "MP ID (Not part of request body in Create/ Update MP)"
+                      },
+                      "compIds": {
+                        "type": "array",
+                        "items": {
+                          "type": "string",
+                          "maxLength": 16,
+                          "pattern": "^[ -~]*$"
+                        },
+                        "description": "Unique compId list to be configured on FIX connection for that MP"
+                      }
                     }
                   }
                 },
-                "example": {
-                  "name": "MP1 Test",
-                  "compIds": [
-                    "compId1"
-                  ],
-                  "id": "2087505361"
-                }
+                "example": [
+                  {
+                    "name": "MP2 Tst1",
+                    "id": "2087505299"
+                  },
+                  {
+                    "name": "MP1 Test",
+                    "compIds": [
+                      "compId1"
+                    ],
+                    "id": "2087505361"
+                  }
+                ]
               }
             }
           },
@@ -4541,7 +4075,9 @@
             "$ref": "#/components/responses/ServerError"
           }
         }
-      },
+      }
+    },
+    "/api/mps/{mpId}": {
       "put": {
         "operationId": "Update_MP",
         "summary": "Update MP",
@@ -4652,6 +4188,81 @@
             }
           }
         }
+      },
+      "get": {
+        "operationId": "Get_MP",
+        "summary": "Get MP",
+        "tags": [
+          "MPs"
+        ],
+        "description": "This API allows to get a single MP details.",
+        "parameters": [
+          {
+            "name": "mpId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The mpId identifier"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "type": "string",
+                      "maxLength": 30,
+                      "pattern": "^[ -~]*$",
+                      "description": "Unique MP Name"
+                    },
+                    "compIds": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "maxLength": 16,
+                        "pattern": "^[ -~]*$"
+                      },
+                      "description": "Unique compId list to be configured on FIX connection for that MP"
+                    },
+                    "id": {
+                      "type": "string",
+                      "pattern": "^[0-9]+$",
+                      "description": "MP ID (Not part of request body in Create/ Update MP)"
+                    }
+                  }
+                },
+                "example": {
+                  "name": "MP1 Test",
+                  "compIds": [
+                    "compId1"
+                  ],
+                  "id": "2087505361"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
       }
     },
     "/api/mp-groups/{groupId}/api-keys": {
@@ -4696,14 +4307,16 @@
                     "mpGroupId": {
                       "type": "string",
                       "pattern": "^[0-9]+$",
-                      "description": "MP ID"
+                      "description": "MP Group ID"
                     },
                     "secret": {
                       "type": "string",
+                      "readOnly": true,
                       "description": "secret key"
                     },
                     "apiKey": {
                       "type": "string",
+                      "readOnly": true,
                       "description": "apiKey"
                     }
                   }
@@ -4802,10 +4415,11 @@
                       "mpGroupId": {
                         "type": "string",
                         "pattern": "^[0-9]+$",
-                        "description": "MP ID"
+                        "description": "MP Group ID"
                       },
                       "apiKey": {
                         "type": "string",
+                        "readOnly": true,
                         "description": "apiKey"
                       }
                     }
@@ -4890,6 +4504,7 @@
                   "properties": {
                     "apiKey": {
                       "type": "string",
+                      "readOnly": true,
                       "description": "apiKey"
                     },
                     "label": {
@@ -4907,7 +4522,7 @@
                     "mpGroupId": {
                       "type": "string",
                       "pattern": "^[0-9]+$",
-                      "description": "MP ID"
+                      "description": "MP Group ID"
                     }
                   }
                 },
@@ -5103,10 +4718,11 @@
                     "mpGroupId": {
                       "type": "string",
                       "pattern": "^[0-9]+$",
-                      "description": "MP ID"
+                      "description": "MP Group ID"
                     },
                     "apiKey": {
                       "type": "string",
+                      "readOnly": true,
                       "description": "apiKey"
                     }
                   }
@@ -5342,7 +4958,34 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/MpGroup"
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "pattern": "^[0-9]+$",
+                      "description": "MP Group ID (Not part of request body in Create/ Update MP Group)"
+                    },
+                    "name": {
+                      "type": "string",
+                      "maxLength": 50,
+                      "pattern": "^[ -~]*$",
+                      "description": "Unique MP Group Name"
+                    },
+                    "compId": {
+                      "type": "string",
+                      "maxLength": 16,
+                      "pattern": "^[ -~]*$",
+                      "description": "Unique compId to be configured on FIX connection for that MP Group"
+                    },
+                    "mpIds": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "pattern": "^[0-9]+$"
+                      },
+                      "description": "List of MPs that this group contains, for all MPs, do not send this property"
+                    }
+                  }
                 },
                 "example": {
                   "id": "97",
@@ -5467,6 +5110,535 @@
         }
       }
     },
+    "/api/accounts": {
+      "post": {
+        "operationId": "Create_Account",
+        "summary": "Create Account",
+        "tags": [
+          "Accounts"
+        ],
+        "description": "This API allows to create a new Account.\n\nID will be returned in the response, this ID is the unique identifier of the Account and should be used when sending update commands.\n\nNote: this ID can be retrieved via Get Accounts API.\n\n#### Create Account - Error Codes\n\n| Code | Message |\n| --- | --- |\n| 1 | System is unavailable |\n| 100 | Missing or invalid parameter: \\[FieldName\\] |\n| 101 | \\[FieldName\\] not found  <br>  <br>Can’t Block the account when InProcess Transaction Requests exist |\n| 102 | CHANGED 1.57.0  <br>~~\\[FieldName\\] already exists~~  <br>\\[FieldName\\] already exists for id: \\[accountId\\] |\n| 10001 | Permission denied |",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "pattern": "^[0-9]+$",
+                      "description": "Account ID (Not part of request body in Create/ Update Account)"
+                    },
+                    "name": {
+                      "type": "string",
+                      "maxLength": 50,
+                      "pattern": "^[ -~]*$",
+                      "description": "Account Name"
+                    },
+                    "mpId": {
+                      "type": "string",
+                      "pattern": "^[0-9]+$",
+                      "description": "MP ID (System generated identifier of MPs)"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "Active",
+                        "Blocked"
+                      ],
+                      "x-enumDescriptions": {
+                        "Active": "activity through the account is allowed",
+                        "Blocked": "activity through the account is not allowed"
+                      },
+                      "description": "If empty, treated as Active"
+                    }
+                  }
+                },
+                "example": {
+                  "id": "3389",
+                  "name": "Acc01",
+                  "mpId": "11",
+                  "status": "Active"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Failure",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "integer"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "example": {
+                  "code": 100,
+                  "message": "Missing or invalid parameter: mpId"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Account"
+              },
+              "example": {
+                "name": "Account 2",
+                "mpId": "14"
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "operationId": "Get_Accounts",
+        "summary": "Get Accounts",
+        "tags": [
+          "Accounts"
+        ],
+        "description": "This API allows to get a list of all accounts with their details.",
+        "parameters": [
+          {
+            "name": "ids",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "integer"
+              }
+            },
+            "description": "List of accounts ids\n\nPass multiple values with bracket notation: `?ids[]={}&ids[]={}`",
+            "style": "form",
+            "explode": true
+          },
+          {
+            "name": "name",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "free text search for all results by name\nSupports the prefix and suffix values below"
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "status"
+          },
+          {
+            "name": "mpId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "mpId"
+          },
+          {
+            "name": "types",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "description": "List of types\n\nPass multiple values with bracket notation: `?types[]={}&types[]={}`",
+            "style": "form",
+            "explode": true
+          },
+          {
+            "name": "description",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "free text search for all results by description\nSupports the prefix and suffix values below"
+          },
+          {
+            "name": "ledgerAccountId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "ledgerAccountId"
+          },
+          {
+            "name": "positionAccountId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "positionAccountId"
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Which record to start send from (if you want page 3 and there are 50 records per page offset should be 150)\nIf nothing was sent default is 0 (=first record)"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 10
+            },
+            "description": "How many records to include in each page\nIf nothing was sent default is 10,000,000"
+          },
+          {
+            "name": "orderBy",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "field": {
+                  "type": "string"
+                },
+                "direction": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "object with 2 parameters:\n- field (String)\n- direction (Asc, Desc)\nAllowed values for field:\n- name : with case-insensitive\nIf nothing was sent the default is [name, Asc]",
+            "style": "deepObject",
+            "explode": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "accounts": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "pattern": "^[0-9]+$",
+                            "description": "Account ID (Not part of request body in Create/ Update Account)"
+                          },
+                          "name": {
+                            "type": "string",
+                            "description": "free text search for all results by name\nSupports the prefix and suffix values below"
+                          },
+                          "mpId": {
+                            "type": "integer",
+                            "description": "mpId"
+                          },
+                          "status": {
+                            "type": "string",
+                            "description": "status"
+                          }
+                        }
+                      }
+                    },
+                    "totalCount": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "example": {
+                  "accounts": [
+                    {
+                      "id": "18",
+                      "name": "Acc1",
+                      "mpId": "11",
+                      "status": "Active"
+                    },
+                    {
+                      "id": "294",
+                      "name": "Acc2",
+                      "mpId": "11",
+                      "status": "Active"
+                    }
+                  ],
+                  "totalCount": "4"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      }
+    },
+    "/api/accounts/{id}": {
+      "put": {
+        "operationId": "Update_Account",
+        "summary": "Update Account",
+        "tags": [
+          "Accounts"
+        ],
+        "description": "This API allows to update existing Account.\n\n#### Update Account - Error Codes\n\nAll errors in Create Account section and the below:\n\n| Code | Message |\n| --- | --- |\n| 100 | Can’t change Ledger Account when active \\[EntityName\\] exist |\n| 101 | MP can’t be changed  <br>Account type can’t be changed |",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Account ID (Not part of request body in Create/ Update Account)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "pattern": "^[0-9]+$",
+                      "description": "Account ID (Not part of request body in Create/ Update Account)"
+                    },
+                    "name": {
+                      "type": "string",
+                      "maxLength": 50,
+                      "pattern": "^[ -~]*$",
+                      "description": "Account Name"
+                    },
+                    "mpId": {
+                      "type": "string",
+                      "pattern": "^[0-9]+$",
+                      "description": "MP ID (System generated identifier of MPs)"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "Active",
+                        "Blocked"
+                      ],
+                      "x-enumDescriptions": {
+                        "Active": "activity through the account is allowed",
+                        "Blocked": "activity through the account is not allowed"
+                      },
+                      "description": "If empty, treated as Active"
+                    }
+                  }
+                },
+                "example": {
+                  "id": "3389",
+                  "name": "Acc01",
+                  "mpId": "11",
+                  "status": "Active"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Failure",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "integer"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "example": {
+                  "code": 101,
+                  "message": "MP can't be changed"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Account"
+              },
+              "example": {
+                "name": "Account 5",
+                "mpId": "14"
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "operationId": "Get_Account",
+        "summary": "Get Account",
+        "tags": [
+          "Accounts"
+        ],
+        "description": "This API allows to get a specific account details.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Account ID (Not part of request body in Create/ Update Account)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "pattern": "^[0-9]+$",
+                      "description": "Account ID (Not part of request body in Create/ Update Account)"
+                    },
+                    "name": {
+                      "type": "string",
+                      "maxLength": 50,
+                      "pattern": "^[ -~]*$",
+                      "description": "Account Name"
+                    },
+                    "mpId": {
+                      "type": "string",
+                      "pattern": "^[0-9]+$",
+                      "description": "MP ID (System generated identifier of MPs)"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "Active",
+                        "Blocked"
+                      ],
+                      "x-enumDescriptions": {
+                        "Active": "activity through the account is allowed",
+                        "Blocked": "activity through the account is not allowed"
+                      },
+                      "description": "If empty, treated as Active"
+                    }
+                  }
+                },
+                "example": {
+                  "id": "18",
+                  "name": "Acc1",
+                  "mpId": "11",
+                  "status": "Active"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Failure",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "integer"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "example": {
+                  "code": 101,
+                  "message": "Account not found"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
     "/api/cbrs": {
       "post": {
         "operationId": "Create_CBR",
@@ -5491,7 +5663,7 @@
                   "value": "1.5",
                   "actionType": "NOTIFY_BACKOFFICE",
                   "priority": "7777",
-                  "status": "ACTIVE",
+                  "status": "Active",
                   "instrumentIds": [
                     "1",
                     "2"
@@ -5553,7 +5725,7 @@
                   "2"
                 ],
                 "priority": "7777",
-                "status": "ACTIVE"
+                "status": "Active"
               }
             }
           }
@@ -5593,7 +5765,7 @@
                       "actionType": "HALT_TRADING",
                       "actionValue": "1",
                       "priority": "4",
-                      "status": "ACTIVE",
+                      "status": "Active",
                       "instrumentIds": [
                         "20"
                       ]
@@ -5606,7 +5778,7 @@
                       "actionType": "HALT_TRADING",
                       "actionValue": "10",
                       "priority": "3",
-                      "status": "DISABLED"
+                      "status": "Disabled"
                     }
                   ]
                 }
@@ -5684,7 +5856,7 @@
                   "value": "1.5",
                   "actionType": "NOTIFY_BACKOFFICE",
                   "priority": "7777",
-                  "status": "ACTIVE",
+                  "status": "Active",
                   "instrumentIds": [
                     "1",
                     "2"
@@ -5746,7 +5918,7 @@
                   "2"
                 ],
                 "priority": "7777",
-                "status": "ACTIVE"
+                "status": "Active"
               }
             }
           }
@@ -5785,7 +5957,7 @@
                   "value": "1",
                   "actionType": "NOTIFY_BACKOFFICE",
                   "priority": "1",
-                  "status": "ACTIVE",
+                  "status": "Active",
                   "rounding": "NONE"
                 }
               }
@@ -5843,7 +6015,40 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/TickSizeTable"
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "pattern": "^[0-9]+$",
+                      "description": "Tick Size ID (Not part of request body in Create/ Update TickSize)"
+                    },
+                    "name": {
+                      "type": "string",
+                      "maxLength": 30,
+                      "description": "Unique TickSize name"
+                    },
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "price": {
+                            "type": "string",
+                            "format": "decimal",
+                            "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
+                            "description": "Price to- use the price when order price ≤ to this price and > from previous price (this array need to be sorted)\nIf empty this will apply to all order prices above the previous price"
+                          },
+                          "tickSize": {
+                            "type": "string",
+                            "format": "decimal",
+                            "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
+                            "description": "Tick size to be used for current price level"
+                          }
+                        }
+                      },
+                      "description": "list of items, stored by their prices (ascending order)"
+                    }
+                  }
                 },
                 "example": {
                   "id": "22",
@@ -5938,7 +6143,39 @@
                     "tables": {
                       "type": "array",
                       "items": {
-                        "$ref": "#/components/schemas/TickSizeTable"
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "pattern": "^[0-9]+$",
+                            "description": "Tick Size ID (Not part of request body in Create/ Update TickSize)"
+                          },
+                          "name": {
+                            "type": "string",
+                            "maxLength": 30,
+                            "description": "Unique TickSize name"
+                          },
+                          "items": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "price": {
+                                  "type": "string",
+                                  "format": "decimal",
+                                  "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
+                                  "description": "Price to- use the price when order price ≤ to this price and > from previous price (this array need to be sorted)\nIf empty this will apply to all order prices above the previous price"
+                                },
+                                "tickSize": {
+                                  "type": "string",
+                                  "format": "decimal",
+                                  "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
+                                  "description": "Tick size to be used for current price level"
+                                }
+                              }
+                            }
+                          }
+                        }
                       }
                     },
                     "totalCount": {
@@ -6043,7 +6280,40 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/TickSizeTable"
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "pattern": "^[0-9]+$",
+                      "description": "Tick Size ID (Not part of request body in Create/ Update TickSize)"
+                    },
+                    "name": {
+                      "type": "string",
+                      "maxLength": 30,
+                      "description": "Unique TickSize name"
+                    },
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "price": {
+                            "type": "string",
+                            "format": "decimal",
+                            "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
+                            "description": "Price to- use the price when order price ≤ to this price and > from previous price (this array need to be sorted)\nIf empty this will apply to all order prices above the previous price"
+                          },
+                          "tickSize": {
+                            "type": "string",
+                            "format": "decimal",
+                            "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
+                            "description": "Tick size to be used for current price level"
+                          }
+                        }
+                      },
+                      "description": "list of items, stored by their prices (ascending order)"
+                    }
+                  }
                 },
                 "example": {
                   "id": "22",
@@ -6143,7 +6413,40 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/TickSizeTable"
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "pattern": "^[0-9]+$",
+                      "description": "Tick Size ID (Not part of request body in Create/ Update TickSize)"
+                    },
+                    "name": {
+                      "type": "string",
+                      "maxLength": 30,
+                      "description": "Unique TickSize name"
+                    },
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "price": {
+                            "type": "string",
+                            "format": "decimal",
+                            "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
+                            "description": "Price to- use the price when order price ≤ to this price and > from previous price (this array need to be sorted)\nIf empty this will apply to all order prices above the previous price"
+                          },
+                          "tickSize": {
+                            "type": "string",
+                            "format": "decimal",
+                            "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
+                            "description": "Tick size to be used for current price level"
+                          }
+                        }
+                      },
+                      "description": "list of items, stored by their prices (ascending order)"
+                    }
+                  }
                 },
                 "example": {
                   "id": "19",
@@ -6695,7 +6998,7 @@
         "parameters": [],
         "responses": {
           "200": {
-            "description": "Successful response",
+            "description": "Success",
             "content": {
               "application/json": {
                 "schema": {
@@ -6709,21 +7012,9 @@
                     }
                   }
                 },
-                "examples": {
-                  "Success": {
-                    "summary": "Success",
-                    "value": {
-                      "numberOfOrders": "9",
-                      "numberOfRfqs": 7
-                    }
-                  },
-                  "Success_1": {
-                    "summary": "Success 1",
-                    "value": {
-                      "numberOfOrders": "2",
-                      "numberOfRfqs": "0"
-                    }
-                  }
+                "example": {
+                  "numberOfOrders": "9",
+                  "numberOfRfqs": 7
                 }
               }
             }
@@ -6784,7 +7075,8 @@
                   },
                   "instrumentId": {
                     "type": "string",
-                    "description": "Instrument ID to mass cancel the orders"
+                    "pattern": "^[0-9]+$",
+                    "description": "Instrument ID to mass cancel the orders\nMandatory if targetScope=Instrument"
                   },
                   "targetEntities": {
                     "type": "array",
@@ -6807,6 +7099,7 @@
                   },
                   "mpId": {
                     "type": "string",
+                    "pattern": "^[0-9]+$",
                     "description": "MP ID to mass cancel the target entities\nNot sending this parameter will mass cancel for all MPs"
                   },
                   "targetParties": {
@@ -6828,7 +7121,7 @@
                         }
                       }
                     },
-                    "description": "targetParties to target the mass cancel orders\nIf multiple targetParty objects are in a request, the system cancels orders with all targetParties\nFor example:\nOrder1 has party1\nOrder2 has party1 and party2\nOrder3 has party1, party2 and party3\nOrder4 has no parties\nA mass cancel request with targetParties(party1 and party2) will cancel order 2 and 3\n`CHANGED v1.46.0` Note: For accounts: id=accountId, source=D, role=1001 source=P, role=24"
+                    "description": "targetParties to target the mass cancel orders\nIf multiple targetParty objects are in a request, the system cancels orders with all targetParties\nFor example:\nOrder1 has party1\nOrder2 has party1 and party2\nOrder3 has party1, party2 and party3\nOrder4 has no parties\nA mass cancel request with targetParties(party1 and party2) will cancel order 2 and 3\nNote: For accounts: id=accountId, source=P, role=24"
                   },
                   "cancelReason": {
                     "type": "string",
@@ -6844,8 +7137,7 @@
                   }
                 },
                 "required": [
-                  "targetScope",
-                  "instrumentId"
+                  "targetScope"
                 ]
               },
               "example": {
@@ -7019,11 +7311,11 @@
                             },
                             "source": {
                               "type": "string",
-                              "description": "Id source = D"
+                              "description": "Id source"
                             },
                             "role": {
                               "type": "integer",
-                              "description": "Id role = 38"
+                              "description": "Id role"
                             }
                           }
                         },
@@ -7054,11 +7346,11 @@
                             },
                             "source": {
                               "type": "string",
-                              "description": "Id source = D"
+                              "description": "Id source"
                             },
                             "role": {
                               "type": "integer",
-                              "description": "Id role = 38"
+                              "description": "Id role"
                             }
                           }
                         },
@@ -7066,6 +7358,17 @@
                       }
                     },
                     "description": "See below"
+                  },
+                  "accountType": {
+                    "type": "string",
+                    "description": "Client/House"
+                  },
+                  "parties": {
+                    "type": "array",
+                    "items": {
+                      "type": "object"
+                    },
+                    "description": "list of parties obj"
                   }
                 },
                 "required": [
@@ -7554,8 +7857,7 @@
               "type": "string",
               "format": "date"
             },
-            "description": "Search for the CAs that exDate ≥ dateFrom. \nFormat:YYYY-MM-DD",
-            "example": "2024-08-01"
+            "description": "Search for the CAs that exDate ≥ dateFrom. Format:YYYY-MM-DD"
           },
           {
             "name": "dateTo",
@@ -7565,8 +7867,7 @@
               "type": "string",
               "format": "date"
             },
-            "description": "Search for the CAs that exDate < dateTo\nFormat: YYYY-MM-DD",
-            "example": "2025-08-01"
+            "description": "Search for the CAs that exDate < dateTo\nFormat: YYYY-MM-DD"
           },
           {
             "name": "instrumentId",
@@ -7576,8 +7877,7 @@
               "type": "string",
               "pattern": "^[0-9]+$"
             },
-            "description": "Instrument Id",
-            "example": "78"
+            "description": "Instrument Id"
           },
           {
             "name": "orderBy",
@@ -7594,10 +7894,9 @@
             "required": false,
             "schema": {
               "type": "string",
-              "pattern": "^[0-9]+$",
-              "x-max-value": 100
+              "pattern": "^[0-9]+$"
             },
-            "description": "How many records to include in each page\nIf nothing was sent default is 25"
+            "description": "How many records to include in each page\nIf nothing was sent default is `(CHANGED v1.59.0)` 25 10,000\nMax value = `(CHANGED v1.59.0)` 100 10,000"
           },
           {
             "name": "offset",
@@ -8321,7 +8620,7 @@
                 "properties": {
                   "id": {
                     "type": "integer",
-                    "description": "New id, uniqueness is not validated by the system; it is the client’s responsibility to maintain it"
+                    "description": "News id, uniqueness is not validated by the system; it is the client’s responsibility to maintain it"
                   },
                   "message": {
                     "type": "string",
