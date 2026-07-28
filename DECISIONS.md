@@ -120,8 +120,8 @@ correctly — on the path parameter (`required: true`). Deriving from the path s
 than a hand-placed marker means it cannot drift when endpoints move.
 **Scoping matters:** inference is per-model, not global — `Account.mpId` stays writable and
 required, because accounts live at `/api/accounts` where `mpId` is not a path parameter.
-**Note:** `MpGroupApiKey.mpGroupId` is declared read-only explicitly, since the path
-parameter (`groupId`) and the property (`mpGroupId`) differ in name.
+**Note:** this rule is what made the path-parameter naming in #21 worth aligning — once the
+parameter and the property share a name, no per-field exception is needed.
 **Considered and rejected:** keeping a read-only property in `required` (spec-legal — the
 requirement then applies to responses only) because many renderers and generators ignore
 that subtlety and still show a "required" badge on the request body.
@@ -148,7 +148,7 @@ omits `mpId`, `accountId`, `allowedInstrumentGroupIds`, `cancelOnDisconncet`.
 keep advertising four fields that do not apply to group keys.
 **How the DRY benefit is retained:** the shared field definitions are **copied from
 `MpApiKey` at generation time**, so constraint or description changes in Postman propagate
-automatically. The `permissions` description is deliberately short and points to `MpApiKey`
+automatically. `mpGroupId` gets its `readOnly` flag from the #17 path-parameter rule. The `permissions` description is deliberately short and points to `MpApiKey`
 for the full per-permission list.
 
 ## 20. API-key paths render after their parent entity's CRUD operations
@@ -157,6 +157,59 @@ entity's own operations (for both MPs and MP Groups).
 **Why:** depth-first traversal of the Postman folders emitted the `API Key` subfolder before
 its parent's endpoints, so the docs opened with API-key operations before the entity itself.
 Ordering is presentation-only — it does not affect the contract.
+
+## 21. Path parameter names are generator-chosen, and kept consistent with the models
+**Decision:** path parameters are named to match the corresponding model property —
+`/api/mps/{mpId}`, `/api/mp-groups/{mpGroupId}`, `/api/…/{id}`.
+**Why this is a decision at all:** the Postman collection stores **literal example IDs** in
+its URLs (`/api/mp-groups/49/api-keys`), with no named variables, so every `{param}` in the
+spec is invented by the generator's URL-templatizing step. The first pass produced `{mpId}`
+for MPs but `{groupId}` for MP Groups — an inconsistency with no basis in the API.
+**Consequence:** parameter names are cosmetic for the contract (path parameters are
+positional), but they surface in generated SDK signatures, Try-It forms and docs prose, so
+consistency is worth having. A rename shows up in oasdiff as paths removed + added; that is
+expected and harmless.
+**Also:** aligning `{mpGroupId}` with the model property let the #17 read-only rule apply
+automatically and removed a hand-written exception.
+
+## 22. Multiple request examples come from 2xx saved responses only
+**Decision:** where a Postman request has several saved responses, their `originalRequest`
+bodies become an OpenAPI named `examples` map on the request body — but **only** the ones
+attached to a **2xx** response. The request's own saved body is always included (as
+`Default`) if it is not already among them.
+**Why:** a request example documents *a valid way to call the endpoint*. A body saved against
+an error response is almost always the same call with values that fail, and it is already
+documented where it belongs — as an example on that error response. Deriving from every saved
+response produced request-example dropdowns on 28 endpoints, 26 of which were pure noise
+(e.g. Place Order and Create Account had a Success and a Failure body with identical key sets).
+**Effect:** only `POST /api/operations/halt` (4 variants) and `POST /api/operations/resume`
+(2 variants) have request-example maps — the two endpoints with genuinely different call
+shapes (`instrumentIds` vs `calendarId` vs `+scheduleResumeTime` vs `+scheduleResumeTimeInterval`).
+**Considered and rejected:** additionally requiring variants to differ by *key set*. It was
+unnecessary (no endpoint has value-only success variants today) and would wrongly discard a
+legitimately useful future variant — e.g. two Place Order successes showing
+`orderType: Limit` vs `Market`, which differ only in values.
+**Note:** example names come from the saved response names, so they inherit the source's
+wording and typos (per #16). Rename them in Postman to change them.
+
+## 23. Field-table parsing quirks worth remembering
+These are source-formatting traps that silently produced wrong schemas; each is now handled,
+and each is a reason to eyeball a regenerated entity rather than trust it blindly:
+- **Empty markdown links.** A Type cell of `UTC Time[](url)` was read as an array because the
+  link-stripping regex required at least one character between the brackets, leaving `[]`
+  behind. (`place-order.expiryDate` rendered as an empty object.)
+- **Sub-object tables.** Fields documented in a nested table (Trade Entry's "Side obj":
+  `accountType`, `parties`) must not also be injected at the top level — that invents
+  parameters the endpoint does not accept there.
+- **Prose beats the Type cell.** `candle-adjustments.orderBy` has Type `Enum` but a
+  description saying "object with 2 parameters"; the prose is right, so a query parameter
+  described that way is modeled as a `deepObject`.
+- **`direction` is closed, `field` is open.** Sort sub-fields: `direction` gets
+  `enum: [Asc, Desc]`; `field` deliberately gets none, because the sortable columns differ
+  per endpoint (`symbol`, `exDate`, …) and the docs name only the default.
+- **`id` is not always server-assigned.** The blanket "never put `id` in `required`" rule
+  (right for entity models) was wrong for `POST /api/operations/news`, where `id` is
+  client-supplied. Exclusion now follows the read-only flag, not the field name.
 
 ## Operational lessons (keep honoring)
 - Every `open()` in tooling: `encoding='utf-8'` (Windows cp1252 default bit us); `ensure_ascii=False` on output.
