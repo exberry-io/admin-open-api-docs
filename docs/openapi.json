@@ -2,7 +2,7 @@
   "openapi": "3.0.3",
   "info": {
     "title": "Exberry Admin API",
-    "version": "1.59.3",
+    "version": "1.59.4",
     "description": "Exberry Admin API allows managing exchange static data (instruments, trading calendars and more) as well as sending operational commands (EOD, halt trading and more).\n\n**Sandbox environment endpoint:** `https://admin-api.uat.exberry-uat.io`\n\n**Guidelines:**\n- All numbers are stringified unless explicitly mentioned otherwise. Stringified integers are marked with pattern `^-?[0-9]+$`; stringified decimals with `format: decimal`.\n- Optional fields should be omitted from request if not required\n- System ignores any additional parameter that are sent on request body but was not specified in this document\n\n**HTTP Error Codes:**\n- 400: Maximum request size exceeded (60KB) or Invalid JSON\n- 401: Invalid token\n- 403: Authentication and authorization errors\n- 404: Route not found\n- 500: Any other error\n- 503: System not available\n- 504: Timeout",
     "contact": {
       "name": "Exberry Support",
@@ -1351,6 +1351,11 @@
           {
             "type": "object",
             "properties": {
+              "mpGroupId": {
+                "type": "string",
+                "pattern": "^[0-9]+$",
+                "description": "MP Group id the apiKey is attached to"
+              },
               "permissions": {
                 "type": "array",
                 "items": {
@@ -2478,25 +2483,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "id": {
-                      "type": "string",
-                      "pattern": "^[0-9]+$",
-                      "description": "Instrument Group ID\n(Not part of the request body of Create Instrument Group)"
-                    },
-                    "name": {
-                      "type": "string",
-                      "maxLength": 30,
-                      "pattern": "^[ -~]*$",
-                      "description": "Name of the Group\nMay contain values that are not unique"
-                    },
-                    "parentGroupId": {
-                      "type": "string",
-                      "pattern": "^[0-9]+$",
-                      "description": "Parent Group ID"
-                    }
-                  }
+                  "$ref": "#/components/schemas/InstrumentGroup"
                 },
                 "example": {
                   "id": "39",
@@ -2575,25 +2562,7 @@
                     "instrumentGroups": {
                       "type": "array",
                       "items": {
-                        "type": "object",
-                        "properties": {
-                          "id": {
-                            "type": "string",
-                            "pattern": "^[0-9]+$",
-                            "description": "Instrument Group ID\n(Not part of the request body of Create Instrument Group)"
-                          },
-                          "name": {
-                            "type": "string",
-                            "maxLength": 30,
-                            "pattern": "^[ -~]*$",
-                            "description": "Name of the Group\nMay contain values that are not unique"
-                          },
-                          "parentGroupId": {
-                            "type": "string",
-                            "pattern": "^[0-9]+$",
-                            "description": "Parent Group ID"
-                          }
-                        }
+                        "$ref": "#/components/schemas/InstrumentGroup"
                       }
                     },
                     "totalCount": {
@@ -2680,20 +2649,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "id": {
-                      "type": "string",
-                      "pattern": "^[0-9]+$",
-                      "description": "Instrument Group ID\n(Not part of the request body of Create Instrument Group)"
-                    },
-                    "name": {
-                      "type": "string",
-                      "maxLength": 30,
-                      "pattern": "^[ -~]*$",
-                      "description": "Name of the Group\nMay contain values that are not unique"
-                    }
-                  }
+                  "$ref": "#/components/schemas/InstrumentGroup"
                 },
                 "example": {
                   "id": "39",
@@ -2776,25 +2732,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "id": {
-                      "type": "string",
-                      "pattern": "^[0-9]+$",
-                      "description": "Instrument Group ID\n(Not part of the request body of Create Instrument Group)"
-                    },
-                    "name": {
-                      "type": "string",
-                      "maxLength": 30,
-                      "pattern": "^[ -~]*$",
-                      "description": "Name of the Group\nMay contain values that are not unique"
-                    },
-                    "parentGroupId": {
-                      "type": "string",
-                      "pattern": "^[0-9]+$",
-                      "description": "Parent Group ID"
-                    }
-                  }
+                  "$ref": "#/components/schemas/InstrumentGroup"
                 },
                 "example": {
                   "id": "35",
@@ -3446,29 +3384,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "name": {
-                      "type": "string",
-                      "maxLength": 30,
-                      "pattern": "^[ -~]*$",
-                      "description": "Unique MP Name"
-                    },
-                    "compIds": {
-                      "type": "array",
-                      "items": {
-                        "type": "string",
-                        "maxLength": 16,
-                        "pattern": "^[ -~]*$"
-                      },
-                      "description": "Unique compId list to be configured on FIX connection for that MP"
-                    },
-                    "id": {
-                      "type": "string",
-                      "pattern": "^[0-9]+$",
-                      "description": "MP ID (Not part of request body in Create/ Update MP)"
-                    }
-                  }
+                  "$ref": "#/components/schemas/MarketParticipant"
                 },
                 "example": {
                   "name": "MP1 Test",
@@ -3548,29 +3464,7 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "type": "object",
-                    "properties": {
-                      "name": {
-                        "type": "string",
-                        "maxLength": 30,
-                        "pattern": "^[ -~]*$",
-                        "description": "Unique MP Name"
-                      },
-                      "id": {
-                        "type": "string",
-                        "pattern": "^[0-9]+$",
-                        "description": "MP ID (Not part of request body in Create/ Update MP)"
-                      },
-                      "compIds": {
-                        "type": "array",
-                        "items": {
-                          "type": "string",
-                          "maxLength": 16,
-                          "pattern": "^[ -~]*$"
-                        },
-                        "description": "Unique compId list to be configured on FIX connection for that MP"
-                      }
-                    }
+                    "$ref": "#/components/schemas/MarketParticipant"
                   }
                 },
                 "example": [
@@ -3632,29 +3526,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "name": {
-                      "type": "string",
-                      "maxLength": 30,
-                      "pattern": "^[ -~]*$",
-                      "description": "Unique MP Name"
-                    },
-                    "compId": {
-                      "type": "array",
-                      "items": {
-                        "type": "string"
-                      }
-                    },
-                    "id": {
-                      "type": "string",
-                      "pattern": "^[0-9]+$",
-                      "description": "MP ID (Not part of request body in Create/ Update MP)"
-                    },
-                    "projectId": {
-                      "type": "string"
-                    }
-                  }
+                  "$ref": "#/components/schemas/MarketParticipant"
                 },
                 "example": {
                   "name": "newName",
@@ -3743,29 +3615,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "name": {
-                      "type": "string",
-                      "maxLength": 30,
-                      "pattern": "^[ -~]*$",
-                      "description": "Unique MP Name"
-                    },
-                    "compIds": {
-                      "type": "array",
-                      "items": {
-                        "type": "string",
-                        "maxLength": 16,
-                        "pattern": "^[ -~]*$"
-                      },
-                      "description": "Unique compId list to be configured on FIX connection for that MP"
-                    },
-                    "id": {
-                      "type": "string",
-                      "pattern": "^[0-9]+$",
-                      "description": "MP ID (Not part of request body in Create/ Update MP)"
-                    }
-                  }
+                  "$ref": "#/components/schemas/MarketParticipant"
                 },
                 "example": {
                   "name": "MP1 Test",
@@ -4274,7 +4124,7 @@
         }
       }
     },
-        "/api/mp-groups": {
+    "/api/mp-groups": {
       "post": {
         "operationId": "Create_MP_Group",
         "summary": "Create MP Group",
@@ -4289,28 +4139,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "id": {
-                      "type": "string",
-                      "pattern": "^[0-9]+$",
-                      "description": "MP Group ID (Not part of request body in Create/ Update MP Group)"
-                    },
-                    "name": {
-                      "type": "string",
-                      "maxLength": 50,
-                      "pattern": "^[ -~]*$",
-                      "description": "Unique MP Group Name"
-                    },
-                    "mpIds": {
-                      "type": "array",
-                      "items": {
-                        "type": "string",
-                        "pattern": "^[0-9]+$"
-                      },
-                      "description": "List of MPs that this group contains, for all MPs, do not send this property"
-                    }
-                  }
+                  "$ref": "#/components/schemas/MpGroup"
                 },
                 "example": {
                   "id": "98",
@@ -4392,27 +4221,7 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "type": "object",
-                    "properties": {
-                      "id": {
-                        "type": "string",
-                        "pattern": "^[0-9]+$",
-                        "description": "MP Group ID (Not part of request body in Create/ Update MP Group)"
-                      },
-                      "name": {
-                        "type": "string",
-                        "maxLength": 50,
-                        "pattern": "^[ -~]*$",
-                        "description": "Unique MP Group Name"
-                      },
-                      "mpIds": {
-                        "type": "array",
-                        "items": {
-                          "type": "string",
-                          "pattern": "^[0-9]+$"
-                        }
-                      }
-                    }
+                    "$ref": "#/components/schemas/MpGroup"
                   }
                 },
                 "example": [
@@ -4475,34 +4284,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "id": {
-                      "type": "string",
-                      "pattern": "^[0-9]+$",
-                      "description": "MP Group ID (Not part of request body in Create/ Update MP Group)"
-                    },
-                    "name": {
-                      "type": "string",
-                      "maxLength": 50,
-                      "pattern": "^[ -~]*$",
-                      "description": "Unique MP Group Name"
-                    },
-                    "compId": {
-                      "type": "string",
-                      "maxLength": 16,
-                      "pattern": "^[ -~]*$",
-                      "description": "Unique compId to be configured on FIX connection for that MP Group"
-                    },
-                    "mpIds": {
-                      "type": "array",
-                      "items": {
-                        "type": "string",
-                        "pattern": "^[0-9]+$"
-                      },
-                      "description": "List of MPs that this group contains, for all MPs, do not send this property"
-                    }
-                  }
+                  "$ref": "#/components/schemas/MpGroup"
                 },
                 "example": {
                   "id": "97",
@@ -4575,28 +4357,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "id": {
-                      "type": "string",
-                      "pattern": "^[0-9]+$",
-                      "description": "MP Group ID (Not part of request body in Create/ Update MP Group)"
-                    },
-                    "name": {
-                      "type": "string",
-                      "maxLength": 50,
-                      "pattern": "^[ -~]*$",
-                      "description": "Unique MP Group Name"
-                    },
-                    "mpIds": {
-                      "type": "array",
-                      "items": {
-                        "type": "string",
-                        "pattern": "^[0-9]+$"
-                      },
-                      "description": "List of MPs that this group contains, for all MPs, do not send this property"
-                    }
-                  }
+                  "$ref": "#/components/schemas/MpGroup"
                 },
                 "example": {
                   "id": "97",
@@ -4652,36 +4413,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "label": {
-                      "type": "string",
-                      "maxLength": 64,
-                      "description": "apiKey label"
-                    },
-                    "permissions": {
-                      "type": "array",
-                      "items": {
-                        "type": "string"
-                      },
-                      "description": "Permissions grantted for the apiKey. A table of available values is listed below"
-                    },
-                    "mpGroupId": {
-                      "type": "string",
-                      "pattern": "^[0-9]+$",
-                      "description": "MP Group ID"
-                    },
-                    "secret": {
-                      "type": "string",
-                      "readOnly": true,
-                      "description": "secret key"
-                    },
-                    "apiKey": {
-                      "type": "string",
-                      "readOnly": true,
-                      "description": "apiKey"
-                    }
-                  }
+                  "$ref": "#/components/schemas/MpGroupApiKey"
                 },
                 "example": {
                   "label": "AllPermissions",
@@ -4761,30 +4493,7 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "type": "object",
-                    "properties": {
-                      "label": {
-                        "type": "string",
-                        "maxLength": 64,
-                        "description": "apiKey label"
-                      },
-                      "permissions": {
-                        "type": "array",
-                        "items": {
-                          "type": "string"
-                        }
-                      },
-                      "mpGroupId": {
-                        "type": "string",
-                        "pattern": "^[0-9]+$",
-                        "description": "MP Group ID"
-                      },
-                      "apiKey": {
-                        "type": "string",
-                        "readOnly": true,
-                        "description": "apiKey"
-                      }
-                    }
+                    "$ref": "#/components/schemas/MpGroupApiKey"
                   }
                 },
                 "example": [
@@ -4862,31 +4571,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "apiKey": {
-                      "type": "string",
-                      "readOnly": true,
-                      "description": "apiKey"
-                    },
-                    "label": {
-                      "type": "string",
-                      "maxLength": 64,
-                      "description": "apiKey label"
-                    },
-                    "permissions": {
-                      "type": "array",
-                      "items": {
-                        "type": "string"
-                      },
-                      "description": "Permissions grantted for the apiKey. A table of available values is listed below"
-                    },
-                    "mpGroupId": {
-                      "type": "string",
-                      "pattern": "^[0-9]+$",
-                      "description": "MP Group ID"
-                    }
-                  }
+                  "$ref": "#/components/schemas/MpGroupApiKey"
                 },
                 "example": {
                   "apiKey": "7f4b8410-4f03-4370-a253-ee0e0d51f446",
@@ -5063,31 +4748,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "label": {
-                      "type": "string",
-                      "maxLength": 64,
-                      "description": "apiKey label"
-                    },
-                    "permissions": {
-                      "type": "array",
-                      "items": {
-                        "type": "string"
-                      },
-                      "description": "Permissions grantted for the apiKey. A table of available values is listed below"
-                    },
-                    "mpGroupId": {
-                      "type": "string",
-                      "pattern": "^[0-9]+$",
-                      "description": "MP Group ID"
-                    },
-                    "apiKey": {
-                      "type": "string",
-                      "readOnly": true,
-                      "description": "apiKey"
-                    }
-                  }
+                  "$ref": "#/components/schemas/MpGroupApiKey"
                 },
                 "example": {
                   "label": "Market Data",
@@ -5134,37 +4795,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "id": {
-                      "type": "string",
-                      "pattern": "^[0-9]+$",
-                      "description": "Account ID (Not part of request body in Create/ Update Account)"
-                    },
-                    "name": {
-                      "type": "string",
-                      "maxLength": 50,
-                      "pattern": "^[ -~]*$",
-                      "description": "Account Name"
-                    },
-                    "mpId": {
-                      "type": "string",
-                      "pattern": "^[0-9]+$",
-                      "description": "MP ID (System generated identifier of MPs)"
-                    },
-                    "status": {
-                      "type": "string",
-                      "enum": [
-                        "Active",
-                        "Blocked"
-                      ],
-                      "x-enumDescriptions": {
-                        "Active": "activity through the account is allowed",
-                        "Blocked": "activity through the account is not allowed"
-                      },
-                      "description": "If empty, treated as Active"
-                    }
-                  }
+                  "$ref": "#/components/schemas/Account"
                 },
                 "example": {
                   "id": "3389",
@@ -5369,26 +5000,7 @@
                     "accounts": {
                       "type": "array",
                       "items": {
-                        "type": "object",
-                        "properties": {
-                          "id": {
-                            "type": "string",
-                            "pattern": "^[0-9]+$",
-                            "description": "Account ID (Not part of request body in Create/ Update Account)"
-                          },
-                          "name": {
-                            "type": "string",
-                            "description": "free text search for all results by name\nSupports the prefix and suffix values below"
-                          },
-                          "mpId": {
-                            "type": "integer",
-                            "description": "mpId"
-                          },
-                          "status": {
-                            "type": "string",
-                            "description": "status"
-                          }
-                        }
+                        "$ref": "#/components/schemas/Account"
                       }
                     },
                     "totalCount": {
@@ -5459,37 +5071,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "id": {
-                      "type": "string",
-                      "pattern": "^[0-9]+$",
-                      "description": "Account ID (Not part of request body in Create/ Update Account)"
-                    },
-                    "name": {
-                      "type": "string",
-                      "maxLength": 50,
-                      "pattern": "^[ -~]*$",
-                      "description": "Account Name"
-                    },
-                    "mpId": {
-                      "type": "string",
-                      "pattern": "^[0-9]+$",
-                      "description": "MP ID (System generated identifier of MPs)"
-                    },
-                    "status": {
-                      "type": "string",
-                      "enum": [
-                        "Active",
-                        "Blocked"
-                      ],
-                      "x-enumDescriptions": {
-                        "Active": "activity through the account is allowed",
-                        "Blocked": "activity through the account is not allowed"
-                      },
-                      "description": "If empty, treated as Active"
-                    }
-                  }
+                  "$ref": "#/components/schemas/Account"
                 },
                 "example": {
                   "id": "3389",
@@ -5574,37 +5156,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "id": {
-                      "type": "string",
-                      "pattern": "^[0-9]+$",
-                      "description": "Account ID (Not part of request body in Create/ Update Account)"
-                    },
-                    "name": {
-                      "type": "string",
-                      "maxLength": 50,
-                      "pattern": "^[ -~]*$",
-                      "description": "Account Name"
-                    },
-                    "mpId": {
-                      "type": "string",
-                      "pattern": "^[0-9]+$",
-                      "description": "MP ID (System generated identifier of MPs)"
-                    },
-                    "status": {
-                      "type": "string",
-                      "enum": [
-                        "Active",
-                        "Blocked"
-                      ],
-                      "x-enumDescriptions": {
-                        "Active": "activity through the account is allowed",
-                        "Blocked": "activity through the account is not allowed"
-                      },
-                      "description": "If empty, treated as Active"
-                    }
-                  }
+                  "$ref": "#/components/schemas/Account"
                 },
                 "example": {
                   "id": "18",
@@ -6028,40 +5580,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "id": {
-                      "type": "string",
-                      "pattern": "^[0-9]+$",
-                      "description": "Tick Size ID (Not part of request body in Create/ Update TickSize)"
-                    },
-                    "name": {
-                      "type": "string",
-                      "maxLength": 30,
-                      "description": "Unique TickSize name"
-                    },
-                    "items": {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "properties": {
-                          "price": {
-                            "type": "string",
-                            "format": "decimal",
-                            "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
-                            "description": "Price to- use the price when order price ≤ to this price and > from previous price (this array need to be sorted)\nIf empty this will apply to all order prices above the previous price"
-                          },
-                          "tickSize": {
-                            "type": "string",
-                            "format": "decimal",
-                            "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
-                            "description": "Tick size to be used for current price level"
-                          }
-                        }
-                      },
-                      "description": "list of items, stored by their prices (ascending order)"
-                    }
-                  }
+                  "$ref": "#/components/schemas/TickSizeTable"
                 },
                 "example": {
                   "id": "22",
@@ -6156,39 +5675,7 @@
                     "tables": {
                       "type": "array",
                       "items": {
-                        "type": "object",
-                        "properties": {
-                          "id": {
-                            "type": "string",
-                            "pattern": "^[0-9]+$",
-                            "description": "Tick Size ID (Not part of request body in Create/ Update TickSize)"
-                          },
-                          "name": {
-                            "type": "string",
-                            "maxLength": 30,
-                            "description": "Unique TickSize name"
-                          },
-                          "items": {
-                            "type": "array",
-                            "items": {
-                              "type": "object",
-                              "properties": {
-                                "price": {
-                                  "type": "string",
-                                  "format": "decimal",
-                                  "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
-                                  "description": "Price to- use the price when order price ≤ to this price and > from previous price (this array need to be sorted)\nIf empty this will apply to all order prices above the previous price"
-                                },
-                                "tickSize": {
-                                  "type": "string",
-                                  "format": "decimal",
-                                  "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
-                                  "description": "Tick size to be used for current price level"
-                                }
-                              }
-                            }
-                          }
-                        }
+                        "$ref": "#/components/schemas/TickSizeTable"
                       }
                     },
                     "totalCount": {
@@ -6293,40 +5780,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "id": {
-                      "type": "string",
-                      "pattern": "^[0-9]+$",
-                      "description": "Tick Size ID (Not part of request body in Create/ Update TickSize)"
-                    },
-                    "name": {
-                      "type": "string",
-                      "maxLength": 30,
-                      "description": "Unique TickSize name"
-                    },
-                    "items": {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "properties": {
-                          "price": {
-                            "type": "string",
-                            "format": "decimal",
-                            "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
-                            "description": "Price to- use the price when order price ≤ to this price and > from previous price (this array need to be sorted)\nIf empty this will apply to all order prices above the previous price"
-                          },
-                          "tickSize": {
-                            "type": "string",
-                            "format": "decimal",
-                            "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
-                            "description": "Tick size to be used for current price level"
-                          }
-                        }
-                      },
-                      "description": "list of items, stored by their prices (ascending order)"
-                    }
-                  }
+                  "$ref": "#/components/schemas/TickSizeTable"
                 },
                 "example": {
                   "id": "22",
@@ -6426,40 +5880,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "id": {
-                      "type": "string",
-                      "pattern": "^[0-9]+$",
-                      "description": "Tick Size ID (Not part of request body in Create/ Update TickSize)"
-                    },
-                    "name": {
-                      "type": "string",
-                      "maxLength": 30,
-                      "description": "Unique TickSize name"
-                    },
-                    "items": {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "properties": {
-                          "price": {
-                            "type": "string",
-                            "format": "decimal",
-                            "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
-                            "description": "Price to- use the price when order price ≤ to this price and > from previous price (this array need to be sorted)\nIf empty this will apply to all order prices above the previous price"
-                          },
-                          "tickSize": {
-                            "type": "string",
-                            "format": "decimal",
-                            "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
-                            "description": "Tick size to be used for current price level"
-                          }
-                        }
-                      },
-                      "description": "list of items, stored by their prices (ascending order)"
-                    }
-                  }
+                  "$ref": "#/components/schemas/TickSizeTable"
                 },
                 "example": {
                   "id": "19",
