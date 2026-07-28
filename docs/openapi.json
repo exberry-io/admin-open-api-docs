@@ -2,7 +2,7 @@
   "openapi": "3.0.3",
   "info": {
     "title": "Exberry Admin API",
-    "version": "1.59.4",
+    "version": "1.59.10",
     "description": "Exberry Admin API allows managing exchange static data (instruments, trading calendars and more) as well as sending operational commands (EOD, halt trading and more).\n\n**Sandbox environment endpoint:** `https://admin-api.uat.exberry-uat.io`\n\n**Guidelines:**\n- All numbers are stringified unless explicitly mentioned otherwise. Stringified integers are marked with pattern `^-?[0-9]+$`; stringified decimals with `format: decimal`.\n- Optional fields should be omitted from request if not required\n- System ignores any additional parameter that are sent on request body but was not specified in this document\n\n**HTTP Error Codes:**\n- 400: Maximum request size exceeded (60KB) or Invalid JSON\n- 401: Invalid token\n- 403: Authentication and authorization errors\n- 404: Route not found\n- 500: Any other error\n- 503: System not available\n- 504: Timeout",
     "contact": {
       "name": "Exberry Support",
@@ -1203,7 +1203,8 @@
           "mpId": {
             "type": "string",
             "pattern": "^[0-9]+$",
-            "description": "MP ID"
+            "description": "MP ID",
+            "readOnly": true
           },
           "permissions": {
             "type": "array",
@@ -1293,7 +1294,6 @@
         },
         "required": [
           "label",
-          "mpId",
           "permissions"
         ]
       },
@@ -1344,49 +1344,73 @@
         ]
       },
       "MpGroupApiKey": {
-        "allOf": [
-          {
-            "$ref": "#/components/schemas/MpApiKey"
+        "type": "object",
+        "description": "API key attached to an MP Group. Scoped to an MP Group (mpGroupId path parameter) rather than a single MP, with a subset of the MP API key permissions.",
+        "properties": {
+          "label": {
+            "type": "string",
+            "maxLength": 64,
+            "description": "apiKey label"
           },
-          {
-            "type": "object",
-            "properties": {
-              "mpGroupId": {
-                "type": "string",
-                "pattern": "^[0-9]+$",
-                "description": "MP Group id the apiKey is attached to"
-              },
-              "permissions": {
-                "type": "array",
-                "items": {
-                  "type": "string",
-                  "enum": [
-                    "market-service:market:market_data",
-                    "market-service:market:order_book_depth",
-                    "market-service:market:order_book_state",
-                    "market-service:market:execution_reports",
-                    "market-service:market:mass_order_status",
-                    "market-service:market:trades",
-                    "reporting:mp:orders",
-                    "reporting:mp:trades"
-                  ],
-                  "x-enumDescriptions": {
-                    "market-service:market:market_data": "FIX Market Data (Market Data group)",
-                    "market-service:market:order_book_depth": "Real Time Market Data (Market Data group)",
-                    "market-service:market:order_book_state": "Market Data Snapshot (Market Data group)",
-                    "market-service:market:execution_reports": "Execution Reports (Drop Copy group)",
-                    "market-service:market:mass_order_status": "Mass Order Status (Drop Copy group)",
-                    "market-service:market:trades": "Trades (Drop Copy group)",
-                    "reporting:mp:orders": "Orders History (Reporting group)",
-                    "reporting:mp:trades": "Trades History (Reporting group)"
-                  }
-                },
-                "description": "Subset of the MP API key permissions available for MP Group keys:\n\n- `market-service:market:market_data`: FIX Market Data (Market Data group)\n- `market-service:market:order_book_depth`: Real Time Market Data (Market Data group)\n- `market-service:market:order_book_state`: Market Data Snapshot (Market Data group)\n- `market-service:market:execution_reports`: Execution Reports (Drop Copy group)\n- `market-service:market:mass_order_status`: Mass Order Status (Drop Copy group)\n- `market-service:market:trades`: Trades (Drop Copy group)\n- `reporting:mp:orders`: Orders History (Reporting group)\n- `reporting:mp:trades`: Trades History (Reporting group)"
+          "apiKey": {
+            "type": "string",
+            "description": "apiKey\nSystem generated on Create API response",
+            "readOnly": true
+          },
+          "secret": {
+            "type": "string",
+            "description": "secret key\nSystem generated on Create API response",
+            "readOnly": true
+          },
+          "ownerId": {
+            "type": "string",
+            "pattern": "^[0-9]+$",
+            "description": "Id of apiKey owner (same as mpId/ mpGroupId)",
+            "readOnly": true
+          },
+          "ownerType": {
+            "type": "string",
+            "description": "MP or MP_GROUP",
+            "readOnly": true
+          },
+          "mpGroupId": {
+            "type": "string",
+            "pattern": "^[0-9]+$",
+            "description": "MP Group id the apiKey is attached to",
+            "readOnly": true
+          },
+          "permissions": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "market-service:market:market_data",
+                "market-service:market:order_book_depth",
+                "market-service:market:order_book_state",
+                "market-service:market:execution_reports",
+                "market-service:market:mass_order_status",
+                "market-service:market:trades",
+                "reporting:mp:orders",
+                "reporting:mp:trades"
+              ],
+              "x-enumDescriptions": {
+                "market-service:market:market_data": "FIX Market Data (Market Data group)",
+                "market-service:market:order_book_depth": "Real Time Market Data (Market Data group)",
+                "market-service:market:order_book_state": "Market Data Snapshot (Market Data group)",
+                "market-service:market:execution_reports": "Execution Reports (Drop Copy group)",
+                "market-service:market:mass_order_status": "Mass Order Status (Drop Copy group)",
+                "market-service:market:trades": "Trades (Drop Copy group)",
+                "reporting:mp:orders": "Orders History (Reporting group)",
+                "reporting:mp:trades": "Trades History (Reporting group)"
               }
-            }
+            },
+            "description": "Permissions granted for the apiKey - a subset of the MP API key permissions. See the MpApiKey model for the full list and per-permission descriptions."
           }
-        ],
-        "description": "API key attached to an MP Group. Structurally identical to MpApiKey, with two differences: it is scoped to an MP Group (groupId path parameter) instead of a single MP (mpId), and the set of allowed permissions is a subset of the MP API key permissions."
+        },
+        "required": [
+          "label",
+          "permissions"
+        ]
       },
       "TickSizeTable": {
         "type": "object",
@@ -4259,7 +4283,7 @@
         }
       }
     },
-    "/api/mp-groups/{groupId}": {
+    "/api/mp-groups/{mpGroupId}": {
       "put": {
         "operationId": "Update_MP_Group",
         "summary": "Update MP Group",
@@ -4269,13 +4293,13 @@
         "description": "#### Update MP Group- Error Codes\n\nAll validations in create instrument and the below\n\n| Code | Message |\n| --- | --- |\n| 101 | \\[FieldName\\] not found |",
         "parameters": [
           {
-            "name": "groupId",
+            "name": "mpGroupId",
             "in": "path",
             "required": true,
             "schema": {
               "type": "string"
             },
-            "description": "The groupId identifier"
+            "description": "The mpGroupId identifier"
           }
         ],
         "responses": {
@@ -4342,13 +4366,13 @@
         "description": "",
         "parameters": [
           {
-            "name": "groupId",
+            "name": "mpGroupId",
             "in": "path",
             "required": true,
             "schema": {
               "type": "string"
             },
-            "description": "The groupId identifier"
+            "description": "The mpGroupId identifier"
           }
         ],
         "responses": {
@@ -4388,7 +4412,7 @@
         }
       }
     },
-    "/api/mp-groups/{groupId}/api-keys": {
+    "/api/mp-groups/{mpGroupId}/api-keys": {
       "post": {
         "operationId": "MP_Groups_Create_API_Key",
         "summary": "Create API Key",
@@ -4398,13 +4422,13 @@
         "description": "Same error codes as for MP apiKeycreation",
         "parameters": [
           {
-            "name": "groupId",
+            "name": "mpGroupId",
             "in": "path",
             "required": true,
             "schema": {
               "type": "string"
             },
-            "description": "The groupId identifier"
+            "description": "MP Group ID"
           }
         ],
         "responses": {
@@ -4476,13 +4500,13 @@
         "description": "",
         "parameters": [
           {
-            "name": "groupId",
+            "name": "mpGroupId",
             "in": "path",
             "required": true,
             "schema": {
               "type": "string"
             },
-            "description": "The groupId identifier"
+            "description": "MP Group ID"
           }
         ],
         "responses": {
@@ -4537,7 +4561,7 @@
         }
       }
     },
-    "/api/mp-groups/{groupId}/api-keys/{apiKey}": {
+    "/api/mp-groups/{mpGroupId}/api-keys/{apiKey}": {
       "put": {
         "operationId": "MP_Groups_Update_API_Key",
         "summary": "Update API Key",
@@ -4547,13 +4571,13 @@
         "description": "This API allows to update an existing apiKey for a specific MP Group.\n\n`secret` is being generated when apiKey is created and can never be changed.",
         "parameters": [
           {
-            "name": "groupId",
+            "name": "mpGroupId",
             "in": "path",
             "required": true,
             "schema": {
               "type": "string"
             },
-            "description": "The groupId identifier"
+            "description": "MP Group ID"
           },
           {
             "name": "apiKey",
@@ -4657,13 +4681,13 @@
         "description": "",
         "parameters": [
           {
-            "name": "groupId",
+            "name": "mpGroupId",
             "in": "path",
             "required": true,
             "schema": {
               "type": "string"
             },
-            "description": "The groupId identifier"
+            "description": "MP Group ID"
           },
           {
             "name": "apiKey",
@@ -4724,13 +4748,13 @@
         "description": "",
         "parameters": [
           {
-            "name": "groupId",
+            "name": "mpGroupId",
             "in": "path",
             "required": true,
             "schema": {
               "type": "string"
             },
-            "description": "The groupId identifier"
+            "description": "MP Group ID"
           },
           {
             "name": "apiKey",
@@ -6070,10 +6094,7 @@
                     "description": "Similar to the trading API"
                   },
                   "expiryDate": {
-                    "type": "array",
-                    "items": {
-                      "type": "object"
-                    },
+                    "type": "string",
                     "description": "Similar to the trading API"
                   },
                   "expiryDay": {
@@ -6792,17 +6813,6 @@
                       }
                     },
                     "description": "See below"
-                  },
-                  "accountType": {
-                    "type": "string",
-                    "description": "Client/House"
-                  },
-                  "parties": {
-                    "type": "array",
-                    "items": {
-                      "type": "object"
-                    },
-                    "description": "list of parties obj"
                   }
                 },
                 "required": [
@@ -7318,9 +7328,23 @@
             "in": "query",
             "required": false,
             "schema": {
-              "type": "string"
+              "type": "object",
+              "properties": {
+                "field": {
+                  "type": "string"
+                },
+                "direction": {
+                  "type": "string",
+                  "enum": [
+                    "Asc",
+                    "Desc"
+                  ]
+                }
+              }
             },
-            "description": "object with 2 parameters:\nfield (String)\ndirection (Asc, Desc) direction\nIf nothing or invalid field was sent the default is [exDate, Desc]"
+            "description": "Sort order. Usage: `?orderBy[field]=symbol&orderBy[direction]=Desc`\n\nIf not sent, defaults to [symbol, Asc]",
+            "style": "deepObject",
+            "explode": true
           },
           {
             "name": "limit",
@@ -7896,11 +7920,40 @@
                   }
                 }
               },
-              "example": {
-                "instrumentIds": [
-                  "12131",
-                  "12141"
-                ]
+              "examples": {
+                "Success": {
+                  "summary": "Success",
+                  "value": {
+                    "instrumentIds": [
+                      "12131",
+                      "12141"
+                    ]
+                  }
+                },
+                "Success_with_filter": {
+                  "summary": "Success with filter",
+                  "value": {
+                    "calendarId": "10"
+                  }
+                },
+                "Success_with_Explicit_time": {
+                  "summary": "Success with Explicit time",
+                  "value": {
+                    "instrumentIds": [
+                      "123"
+                    ],
+                    "scheduleResumeTime ": "1727410156"
+                  }
+                },
+                "Success_with_time_interval": {
+                  "summary": "Success with time interval",
+                  "value": {
+                    "instrumentIds": [
+                      "123"
+                    ],
+                    "scheduleResumeTimeInterval": "5"
+                  }
+                }
               }
             }
           }
@@ -7998,11 +8051,22 @@
                   }
                 }
               },
-              "example": {
-                "instrumentIds": [
-                  "12131",
-                  "12141"
-                ]
+              "examples": {
+                "Success": {
+                  "summary": "Success",
+                  "value": {
+                    "instrumentIds": [
+                      "12131",
+                      "12141"
+                    ]
+                  }
+                },
+                "Success_with_filter": {
+                  "summary": "Success with filter",
+                  "value": {
+                    "calendarId": "10"
+                  }
+                }
               }
             }
           }
@@ -8062,6 +8126,7 @@
                   }
                 },
                 "required": [
+                  "id",
                   "message"
                 ]
               },
