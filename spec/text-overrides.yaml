@@ -22,7 +22,7 @@ info:
     **Sandbox environment endpoint:** `https://admin-api.uat.exberry-uat.io`
 
     **Guidelines:**
-    - All numbers are stringified unless explicitly mentioned otherwise. Stringified integers are marked with pattern `^[0-9]+$`; stringified decimals with `format: decimal`.
+    - All numbers are stringified unless explicitly mentioned otherwise. Stringified integers are marked with pattern `^-?[0-9]+$`; stringified decimals with `format: decimal`.
     - Optional fields should be omitted from request if not required
     - System ignores any additional parameter that are sent on request body but was not specified in this document
 
@@ -34,23 +34,13 @@ info:
     - 500: Any other error
     - 503: System not available
     - 504: Timeout
-
-    **Maker-Checker approval flow** (to activate, contact the operations team):
-
-    The maker-checker process is a workflow that requires the approval of at least two individuals to agree on an action. It involves two parties:
-
-    - **Maker**: the person who initiates the action (can always see their own requests and reject them)
-    - **Checker**: the person who approves the action (cannot approve their own request)
-
-    When a user requests an action (like update or create an instrument), the change does not happen immediately - e.g. it won't be shown in the instrument list. The change takes place only after approval. A super user with the right permission can override this flow.
-
-    For any action that is part of the flow, the request can include a `comment` field (String) - the maker's explanation of what the action contains, giving the checker the change context.
-
-    Instead of the regular response message, any API request involved in the flow returns a `MakerCheckerRequest` entity (see the model below). Its `data` property contains the data model of the requested action, identical to the API specification for that action without maker-checker activated.
 tags:
-  Accounts: |-
-    Manage trading accounts. An account belongs to a market participant and controls how activity (Client / House) is booked.
-  Authentication: Authenticate with the email and password provided by the Exberry team to receive a JWT token. Use it as a Bearer token on every other request. Regenerate before expiresIn elapses.
+  Authentication: |-
+    Any Admin API access will be provided an email and password.
+    Each email is assigned with the relevant permissions.
+    Before sending any request to Admin API, consumer needs to authenticate by calling the "Get Token" API and receiving `token`.
+    This token should be used as Authorization (Bearer Token) for all other API methods.
+    Token expiration time is sent in the response along with token, need to regenerate the token when expiry time reached.
   Instruments: |-
     Instruments API allows you to:
     - Get single instrument details
@@ -90,6 +80,13 @@ tags:
     - Create MP Group
     - Update existing MP Group
     MP Group Object
+  Accounts: |-
+    Accounts API allows you to:
+    - Get single Account details
+    - Get the list of all Accounts with their details
+    - Create Account
+    - Update existing Account
+    Account Object
   CBR: |-
     Circuit Breaker Rules (CBR) API allows you to:
     - Get single CBR details
@@ -107,8 +104,6 @@ operations:
   Get_Token:
     summary: Get Token
     description: |-
-      Exchanges email + password for a JWT bearer token.
-
       #### Error Codes
 
       | Code | Message |
@@ -190,7 +185,7 @@ operations:
       | Ends with "X" | Find any description/ symbol that ends with "X" | \*X |
       | Equal to 'X' | Find any description/ symbol that = "X" | 'X' |
 
-      #### NEW v1.30.0 Get Instrument- Error Codes
+      #### Get Instrument- Error Codes
 
       | Code | Message |
       | --- | --- |
@@ -204,8 +199,6 @@ operations:
       This API allows to update existing instrument.
 
       #### Update Instrument- Error Codes
-
-      All validations in create instrument and the below
 
       All validations in create instrument and the below
 
@@ -299,7 +292,11 @@ operations:
 
       #### Update Instrument Group - Error Codes
 
-      All validations in create instrument group
+      All validations in create instrument group and the below
+
+      | Code | Message |
+      | --- | --- |
+      | 101 | `(NEW v1.59.0)` Can’t change status to Disabled when \[entity\] with this Instrument Group exist  <br>entity:  <br>\- Instruments  <br>\- CBRs  <br>\- API Keys  <br>  <br>`(NEW v1.59.0)` Can’t change status to Disabled when Instrument Group is a parent group |
   Get_Instrument_Group:
     summary: Get Instrument Group
     description: This API allows to get a single instrument group details.
@@ -321,8 +318,8 @@ operations:
       | 101 | Holiday date should not be sent twice |
       | 101 | Wrong holiday close time |
       | 101 | name already exists |
-      | `NEW v1.33.0`  <br>101 | IOC TIF is allowed only for Equilibrium Price |
-      | `NEW v1.35.0`  <br>101 | AutoResume auction is required by \[CBRName\] CBR |
+      | 101 | IOC TIF is allowed only for Equilibrium Price |
+      | 101 | AutoResume auction is required by \[CBRName\] CBR |
       | 10001 | Permission denied |
       | 10005 | Not found |
       | 20000 | Calendar Name already exists |
@@ -338,13 +335,12 @@ operations:
       | 101 | Auction start must be after previous auction end |
       | 101 | randomEndTime / 2 must be less than duration |
       | 101 | Wrong duration and randomEndTime |
-      | \[REMOVED 1.42.0\]~~  <br>101~~ | ~~One side must contain single mpId~~ |
       | 101 | \[fieldName\] is relevant only for timeBased auction |
       | 101 | Only single auction can be configured with \[fieldName\] trigger |
       | 101 | overrideReferencePrice can be True only for equilibrium price algorithm |
       | 101 | AutoResume auction is required by \[CBRName\] CBR |
       | 101 | IOC TIF is allowed only for Equilibrium Price |
-      | `NEW v1.38.0`  <br>102 | The auction duration in \[calendar\] is shorter than the minimum allowed duration |
+      | 102 | The auction duration in \[calendar\] is shorter than the minimum allowed duration |
       | 10001 | Permission denied |
       | 10005 | Not found |
   Get_Calendars:
@@ -384,43 +380,6 @@ operations:
       | 101 | \[FieldName\] not found |
       | 102 | EOD is not allowed |
       | 10001 | Permission denied |
-  Get_Accounts:
-    summary: Get Accounts
-    description: This API allows to get a list of all accounts with their details.
-  Create_Account:
-    summary: Create Account
-    description: |-
-      This API allows to create a new Account.
-
-      ID will be returned in the response, this ID is the unique identifier of the Account and should be used when sending update commands.
-
-      Note: this ID can be retrieved via Get Accounts API.
-
-      #### Create Account - Error Codes
-
-      | Code | Message |
-      | --- | --- |
-      | 1 | System is unavailable |
-      | 100 | Missing or invalid parameter: \[FieldName\] |
-      | 101 | \[FieldName\] not found  <br>  <br>Can’t Block the account when InProcess Transaction Requests exist |
-      | 102 | CHANGED 1.57.0  <br>~~\[FieldName\] already exists~~  <br>\[FieldName\] already exists for id: \[accountId\] |
-      | 10001 | Permission denied |
-  Get_Account:
-    summary: Get Account
-    description: This API allows to get a specific account details.
-  Update_Account:
-    summary: Update Account
-    description: |-
-      This API allows to update existing Account.
-
-      #### Update Account - Error Codes
-
-      All errors in Create Account section and the below:
-
-      | Code | Message |
-      | --- | --- |
-      | 100 | Can’t change Ledger Account when active \[EntityName\] exist |
-      | 101 | MP can’t be changed  <br>Account type can’t be changed |
   Create_API_Key:
     summary: Create API Key
     description: |-
@@ -437,7 +396,6 @@ operations:
       | 100 | Missing or invalid parameter: \[FieldName\] |
       | 101 | \[FieldName\] not found |
       | 102 | label already exists |
-      | `(REMOVED v1.43.0)`  <br>60002 | Allowed and blocked instruments/`(NEW v1.42.0)` instrumentGroups can not be filled for a single apiKey |
   Get_API_Keys:
     summary: Get API Keys
     description: This API allows to get a list of all apiKeys with their details for specific MP.
@@ -453,9 +411,6 @@ operations:
   Delete_API_Key:
     summary: Delete API Key
     description: This API allows to delete existing apiKey.
-  Get_MPs:
-    summary: Get MPs
-    description: This API allows to get a list of all MPs with their details.
   Create_MP:
     summary: Create MP
     description: |-
@@ -473,9 +428,9 @@ operations:
       | 100 | Missing or invalid parameter: \[FieldName\] |
       | 102 | \[FieldName\] already exists |
       | 10001 | Permission denied |
-  Get_MP:
-    summary: Get MP
-    description: This API allows to get a single MP details.
+  Get_MPs:
+    summary: Get MPs
+    description: This API allows to get a list of all MPs with their details.
   Update_MP:
     summary: Update MP
     description: |-
@@ -488,6 +443,9 @@ operations:
       | Code | Message |
       | --- | --- |
       | 101 | \[FieldName\] not found |
+  Get_MP:
+    summary: Get MP
+    description: This API allows to get a single MP details.
   MP_Groups_Create_API_Key:
     summary: Create API Key
     description: Same error codes as for MP apiKeycreation
@@ -529,6 +487,61 @@ operations:
       | 101 | \[FieldName\] not found |
   Get_MP_Group:
     summary: Get MP Group
+  Create_Account:
+    summary: Create Account
+    description: |-
+      This API allows to create a new Account.
+
+      ID will be returned in the response, this ID is the unique identifier of the Account and should be used when sending update commands.
+
+      Note: this ID can be retrieved via Get Accounts API.
+
+      #### Create Account - Error Codes
+
+      | Code | Message |
+      | --- | --- |
+      | 1 | System is unavailable |
+      | 100 | Missing or invalid parameter: \[FieldName\] |
+      | 101 | \[FieldName\] not found  <br>  <br>Can’t Block the account when InProcess Transaction Requests exist |
+      | 102 | CHANGED 1.57.0  <br>~~\[FieldName\] already exists~~  <br>\[FieldName\] already exists for id: \[accountId\] |
+      | 10001 | Permission denied |
+  Get_Accounts:
+    summary: Get Accounts
+    description: |-
+      This API allows to get a list of all accounts with their details.
+
+      #### (NEW v1.59.0) Prefix & Suffix
+
+      | Pattern Type | Pattern |
+      | --- | --- |
+      | Contains "X" | X |
+      | Starts with "X" | X\* |
+      | Ends with "X" | \*X |
+      | Equal to 'X' | 'X' |
+
+      #### (NEW v1.59.0) Get Accounts - Error Codes
+
+      | Code | Message |
+      | --- | --- |
+      | 1 | System is unavailable |
+      | 10001 | Permission denied |
+      | 100 | Missing or invalid parameter: \[FieldName\] |
+  Update_Account:
+    summary: Update Account
+    description: |-
+      This API allows to update existing Account.
+
+      #### Update Account - Error Codes
+
+      All errors in Create Account section and the below:
+
+      | Code | Message |
+      | --- | --- |
+      | 100 | Can’t change Ledger Account when active \[EntityName\] exist |
+      | 101 | MP can’t be changed  <br>Account type can’t be changed |
+  Get_Account:
+    summary: Get Account
+    description: This API allows to get a specific account details.
   Create_CBR:
     summary: Create CBR
     description: |-
@@ -587,7 +600,7 @@ operations:
       | --- | --- |
       | 1 | System is unavailable |
       | 100 | Missing or invalid parameter: \[FieldName\] |
-      | 101 `new` | Max number of ticksizes (items) is 25 |
+      | 101 `new` | Max number of ticksizes (items) is 25  <br>  <br>`(NEW v1.59.0)` Can’t change status to Disabled when \[entity\] with this Tick Size Table exist  <br>\- entity: Instruments |
       | 102 | name already exists |
       | 10001 | Permission denied |
   Get_TickSizes:
@@ -958,4 +971,4 @@ operations:
       | 100 | Missing or invalid parameter: \[FieldName\] |
       | 10001 | Permission denied |
 schema_descriptions:
-  Instrument.properties.symbol: 'Unique instrument symbol. Allowed characters: a-Z, 0-9, - . ^ = /'
+  Instrument.properties.symbol: Unique Symbol of the instrument, contains [a-Z,0-9,-,.,^,=,/]

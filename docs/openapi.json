@@ -2,8 +2,8 @@
   "openapi": "3.0.3",
   "info": {
     "title": "Exberry Admin API",
-    "version": "1.59.0",
-    "description": "Exberry Admin API allows managing exchange static data (instruments, trading calendars and more) as well as sending operational commands (EOD, halt trading and more).\n\n**Sandbox environment endpoint:** `https://admin-api.uat.exberry-uat.io`\n\n**Guidelines:**\n- All numbers are stringified unless explicitly mentioned otherwise. Stringified integers are marked with pattern `^[0-9]+$`; stringified decimals with `format: decimal`.\n- Optional fields should be omitted from request if not required\n- System ignores any additional parameter that are sent on request body but was not specified in this document\n\n**HTTP Error Codes:**\n- 400: Maximum request size exceeded (60KB) or Invalid JSON\n- 401: Invalid token\n- 403: Authentication and authorization errors\n- 404: Route not found\n- 500: Any other error\n- 503: System not available\n- 504: Timeout\n\n**Maker-Checker approval flow** (to activate, contact the operations team):\n\nThe maker-checker process is a workflow that requires the approval of at least two individuals to agree on an action. It involves two parties:\n\n- **Maker**: the person who initiates the action (can always see their own requests and reject them)\n- **Checker**: the person who approves the action (cannot approve their own request)\n\nWhen a user requests an action (like update or create an instrument), the change does not happen immediately - e.g. it won't be shown in the instrument list. The change takes place only after approval. A super user with the right permission can override this flow.\n\nFor any action that is part of the flow, the request can include a `comment` field (String) - the maker's explanation of what the action contains, giving the checker the change context.\n\nInstead of the regular response message, any API request involved in the flow returns a `MakerCheckerRequest` entity (see the model below). Its `data` property contains the data model of the requested action, identical to the API specification for that action without maker-checker activated.",
+    "version": "1.59.2",
+    "description": "Exberry Admin API allows managing exchange static data (instruments, trading calendars and more) as well as sending operational commands (EOD, halt trading and more).\n\n**Sandbox environment endpoint:** `https://admin-api.uat.exberry-uat.io`\n\n**Guidelines:**\n- All numbers are stringified unless explicitly mentioned otherwise. Stringified integers are marked with pattern `^-?[0-9]+$`; stringified decimals with `format: decimal`.\n- Optional fields should be omitted from request if not required\n- System ignores any additional parameter that are sent on request body but was not specified in this document\n\n**HTTP Error Codes:**\n- 400: Maximum request size exceeded (60KB) or Invalid JSON\n- 401: Invalid token\n- 403: Authentication and authorization errors\n- 404: Route not found\n- 500: Any other error\n- 503: System not available\n- 504: Timeout",
     "contact": {
       "name": "Exberry Support",
       "url": "https://exberry.io"
@@ -446,7 +446,7 @@
           "symbol": {
             "type": "string",
             "maxLength": 16,
-            "description": "Unique instrument symbol. Allowed characters: a-Z, 0-9, - . ^ = /"
+            "description": "Unique Symbol of the instrument, contains [a-Z,0-9,-,.,^,=,/]"
           },
           "quoteCurrency": {
             "type": "string",
@@ -1502,7 +1502,7 @@
   "tags": [
     {
       "name": "Authentication",
-      "description": "Authenticate with the email and password provided by the Exberry team to receive a JWT token. Use it as a Bearer token on every other request. Regenerate before expiresIn elapses."
+      "description": "Any Admin API access will be provided an email and password.\nEach email is assigned with the relevant permissions.\nBefore sending any request to Admin API, consumer needs to authenticate by calling the \"Get Token\" API and receiving `token`.\nThis token should be used as Authorization (Bearer Token) for all other API methods.\nToken expiration time is sent in the response along with token, need to regenerate the token when expiry time reached."
     },
     {
       "name": "Instruments",
@@ -1526,7 +1526,7 @@
     },
     {
       "name": "Accounts",
-      "description": "Manage trading accounts. An account belongs to a market participant and controls how activity (Client / House) is booked."
+      "description": "Accounts API allows you to:\n- Get single Account details\n- Get the list of all Accounts with their details\n- Create Account\n- Update existing Account\nAccount Object"
     },
     {
       "name": "CBR",
@@ -1549,7 +1549,7 @@
         "tags": [
           "Authentication"
         ],
-        "description": "Exchanges email + password for a JWT bearer token.\n\n#### Error Codes\n\n| Code | Message |\n| --- | --- |\n| 2 | Wrong email or password |\n| 10000 | Please login to Admin Application before using API |",
+        "description": "#### Error Codes\n\n| Code | Message |\n| --- | --- |\n| 2 | Wrong email or password |\n| 10000 | Please login to Admin Application before using API |",
         "parameters": [],
         "responses": {
           "200": {
@@ -1741,7 +1741,7 @@
         "tags": [
           "Instruments"
         ],
-        "description": "This API allows to get a list of all instruments with their details.\n\n#### Get Instruments- Fields\n\n**Example for derivativeInstrumentCategory instrument -**\n\n- InstrumentId: 1,\n\n- InstrumentId: 2,\n\n- InstrumentId: 3,\n\n- InstrumentId: 4,\n\n- InstrumentId: 10, underlyingInstrumentId: 1, category: Futures, status: active\n\n- InstrumentId: 11, underlyingInstrumentId: 2, category: Futures, status: disabled\n\n- InstrumentId: 12, underlyingInstrumentId: 3, category: Spot, status: active\n\n- InstrumentId: 13, underlyingInstrumentId: 4, category: Spot, status: disabled\n\n\nWhen Derivative Instrument Category = Futures → InstrumentId:1 is returned.\n\nWhen Derivative Instrument Category = Spot →InstrumentId:3 is returned.\n\n#### Suffix & Prefix\n\n| Pattern Type | Description | Sample |\n| --- | --- | --- |\n| Contains the word \"X\" | Find any description/ symbols that contains \"X\" | X |\n| Starts with \"X\" | Find any description/ symbols that start with \"X\" | X\\* |\n| Ends with \"X\" | Find any description/ symbol that ends with \"X\" | \\*X |\n| Equal to 'X' | Find any description/ symbol that = \"X\" | 'X' |\n\n#### NEW v1.30.0 Get Instrument- Error Codes\n\n| Code | Message |\n| --- | --- |\n| 102 | Single category should be sent |\n| 102 | Wrong Sub Category |\n| 102 | Strategies category should be sent |\n| 100 | Missing or invalid parameter: \\[FieldName\\] |",
+        "description": "This API allows to get a list of all instruments with their details.\n\n#### Get Instruments- Fields\n\n**Example for derivativeInstrumentCategory instrument -**\n\n- InstrumentId: 1,\n\n- InstrumentId: 2,\n\n- InstrumentId: 3,\n\n- InstrumentId: 4,\n\n- InstrumentId: 10, underlyingInstrumentId: 1, category: Futures, status: active\n\n- InstrumentId: 11, underlyingInstrumentId: 2, category: Futures, status: disabled\n\n- InstrumentId: 12, underlyingInstrumentId: 3, category: Spot, status: active\n\n- InstrumentId: 13, underlyingInstrumentId: 4, category: Spot, status: disabled\n\n\nWhen Derivative Instrument Category = Futures → InstrumentId:1 is returned.\n\nWhen Derivative Instrument Category = Spot →InstrumentId:3 is returned.\n\n#### Suffix & Prefix\n\n| Pattern Type | Description | Sample |\n| --- | --- | --- |\n| Contains the word \"X\" | Find any description/ symbols that contains \"X\" | X |\n| Starts with \"X\" | Find any description/ symbols that start with \"X\" | X\\* |\n| Ends with \"X\" | Find any description/ symbol that ends with \"X\" | \\*X |\n| Equal to 'X' | Find any description/ symbol that = \"X\" | 'X' |\n\n#### Get Instrument- Error Codes\n\n| Code | Message |\n| --- | --- |\n| 102 | Single category should be sent |\n| 102 | Wrong Sub Category |\n| 102 | Strategies category should be sent |\n| 100 | Missing or invalid parameter: \\[FieldName\\] |",
         "parameters": [
           {
             "name": "symbol",
@@ -1853,10 +1853,15 @@
             "schema": {
               "type": "array",
               "items": {
-                "type": "string"
+                "type": "string",
+                "enum": [
+                  "ACTIVE",
+                  "DISABLED",
+                  "ARCHIVED"
+                ]
               }
             },
-            "description": "Search by the list of statuses\n- ACTIVE\n- DISABLED\n- ARCHIVED\n\nPass multiple values with bracket notation: `?statuses[]={}&statuses[]={}`",
+            "description": "Search by the list of statuses\n\nPass multiple values with bracket notation, e.g.: `?statuses[]=ACTIVE&statuses[]=DISABLED`",
             "style": "form",
             "explode": true
           },
@@ -1870,7 +1875,7 @@
                 "type": "string"
               }
             },
-            "description": "Search by catagory\nfor values see in the Category List - here\n\nPass multiple values with bracket notation: `?categories[]={}&categories[]={}`",
+            "description": "Search by catagory\nfor values see in the Category List - here\n\nPass multiple values with bracket notation: `?categories[]=value1&categories[]=value2`",
             "style": "form",
             "explode": true
           },
@@ -1921,11 +1926,15 @@
                   "type": "string"
                 },
                 "direction": {
-                  "type": "string"
+                  "type": "string",
+                  "enum": [
+                    "Asc",
+                    "Desc"
+                  ]
                 }
               }
             },
-            "description": "object with 2 parameters:\n- field (String) = symbol (case-insensitive)\n- direction (Asc, Desc)\nIf nothing or invalid field was sent the default is [symbol, Asc]\nSample: `orderBy[field]=symbol`",
+            "description": "Sort order. Usage: `?orderBy[field]=symbol&orderBy[direction]=Desc`\n\nIf not sent, defaults to [symbol, Asc]",
             "style": "deepObject",
             "explode": true
           }
@@ -2110,7 +2119,7 @@
         "tags": [
           "Instruments"
         ],
-        "description": "This API allows to update existing instrument.\n\n#### Update Instrument- Error Codes\n\nAll validations in create instrument and the below\n\nAll validations in create instrument and the below\n\n| Code | Message |\n| --- | --- |\n| 100 | Missing or invalid parameter: \\[FieldName\\] |\n| 101 | \\[FieldName\\] not found |\n| 101 | \\[Start Date/~~Stop Date~~ Removed v1.25 ~~/~~ Category\\] can’t be changed after start date |\n| 101 | Category can’t be changed for instrument that is underlying instrument |\n| 101 | \\[FieldName\\] can’t be changed for strategy related instrument |\n| 101 | \\[FieldName\\] can’t be changed after elapsed |\n| 105 | Mass cancellation must be done before disabling the instrument |\n| 2402 | Mass cancellation must be done before changing quantityPrecision |\n| 2402 | Mass cancellation must be done before changing pricePrecision |\n| 10001 | Permission denied |",
+        "description": "This API allows to update existing instrument.\n\n#### Update Instrument- Error Codes\n\nAll validations in create instrument and the below\n\n| Code | Message |\n| --- | --- |\n| 100 | Missing or invalid parameter: \\[FieldName\\] |\n| 101 | \\[FieldName\\] not found |\n| 101 | \\[Start Date/~~Stop Date~~ Removed v1.25 ~~/~~ Category\\] can’t be changed after start date |\n| 101 | Category can’t be changed for instrument that is underlying instrument |\n| 101 | \\[FieldName\\] can’t be changed for strategy related instrument |\n| 101 | \\[FieldName\\] can’t be changed after elapsed |\n| 105 | Mass cancellation must be done before disabling the instrument |\n| 2402 | Mass cancellation must be done before changing quantityPrecision |\n| 2402 | Mass cancellation must be done before changing pricePrecision |\n| 10001 | Permission denied |",
         "parameters": [
           {
             "name": "id",
@@ -2653,7 +2662,7 @@
         "tags": [
           "Instrument Groups"
         ],
-        "description": "This API allows to update existing instrument group.\n\n#### Update Instrument Group - Error Codes\n\nAll validations in create instrument group",
+        "description": "This API allows to update existing instrument group.\n\n#### Update Instrument Group - Error Codes\n\nAll validations in create instrument group and the below\n\n| Code | Message |\n| --- | --- |\n| 101 | `(NEW v1.59.0)` Can’t change status to Disabled when \\[entity\\] with this Instrument Group exist  <br>entity:  <br>\\- Instruments  <br>\\- CBRs  <br>\\- API Keys  <br>  <br>`(NEW v1.59.0)` Can’t change status to Disabled when Instrument Group is a parent group |",
         "parameters": [
           {
             "name": "id",
@@ -2839,7 +2848,7 @@
         "tags": [
           "Calendars"
         ],
-        "description": "This API allows to create a new calendar.\n\nID will be returned in the response, this ID is the unique identifier of the calendar and should be used when sending update commands.\n\nNote: this ID can be retrieved via Get Calendars API.\n\n#### Create Calendar- Error Codes\n\n| Code | Message |\n| --- | --- |\n| 1 | System is unavailable |\n| 100 | Missing or invalid parameter: \\[FieldName\\] |\n| 101 | Holiday date should not be sent twice |\n| 101 | Wrong holiday close time |\n| 101 | name already exists |\n| `NEW v1.33.0`  <br>101 | IOC TIF is allowed only for Equilibrium Price |\n| `NEW v1.35.0`  <br>101 | AutoResume auction is required by \\[CBRName\\] CBR |\n| 10001 | Permission denied |\n| 10005 | Not found |\n| 20000 | Calendar Name already exists |\n| 20001 | Wrong format |\n| 20002 | Wrong format |\n\n#### Auction - Error Codes\n\n| Code | Message |\n| --- | --- |\n| 1 | System is unavailable |\n| 100 | Missing or invalid parameter: \\[FieldName\\] |\n| 101 | Auction start must be after previous auction end |\n| 101 | randomEndTime / 2 must be less than duration |\n| 101 | Wrong duration and randomEndTime |\n| \\[REMOVED 1.42.0\\]~~  <br>101~~ | ~~One side must contain single mpId~~ |\n| 101 | \\[fieldName\\] is relevant only for timeBased auction |\n| 101 | Only single auction can be configured with \\[fieldName\\] trigger |\n| 101 | overrideReferencePrice can be True only for equilibrium price algorithm |\n| 101 | AutoResume auction is required by \\[CBRName\\] CBR |\n| 101 | IOC TIF is allowed only for Equilibrium Price |\n| `NEW v1.38.0`  <br>102 | The auction duration in \\[calendar\\] is shorter than the minimum allowed duration |\n| 10001 | Permission denied |\n| 10005 | Not found |",
+        "description": "This API allows to create a new calendar.\n\nID will be returned in the response, this ID is the unique identifier of the calendar and should be used when sending update commands.\n\nNote: this ID can be retrieved via Get Calendars API.\n\n#### Create Calendar- Error Codes\n\n| Code | Message |\n| --- | --- |\n| 1 | System is unavailable |\n| 100 | Missing or invalid parameter: \\[FieldName\\] |\n| 101 | Holiday date should not be sent twice |\n| 101 | Wrong holiday close time |\n| 101 | name already exists |\n| 101 | IOC TIF is allowed only for Equilibrium Price |\n| 101 | AutoResume auction is required by \\[CBRName\\] CBR |\n| 10001 | Permission denied |\n| 10005 | Not found |\n| 20000 | Calendar Name already exists |\n| 20001 | Wrong format |\n| 20002 | Wrong format |\n\n#### Auction - Error Codes\n\n| Code | Message |\n| --- | --- |\n| 1 | System is unavailable |\n| 100 | Missing or invalid parameter: \\[FieldName\\] |\n| 101 | Auction start must be after previous auction end |\n| 101 | randomEndTime / 2 must be less than duration |\n| 101 | Wrong duration and randomEndTime |\n| 101 | \\[fieldName\\] is relevant only for timeBased auction |\n| 101 | Only single auction can be configured with \\[fieldName\\] trigger |\n| 101 | overrideReferencePrice can be True only for equilibrium price algorithm |\n| 101 | AutoResume auction is required by \\[CBRName\\] CBR |\n| 101 | IOC TIF is allowed only for Equilibrium Price |\n| 102 | The auction duration in \\[calendar\\] is shorter than the minimum allowed duration |\n| 10001 | Permission denied |\n| 10005 | Not found |",
         "parameters": [],
         "responses": {
           "200": {
@@ -3429,7 +3438,7 @@
         "tags": [
           "MPs"
         ],
-        "description": "This API allows to create a new apiKey for a specific MP.\nAs a response system will generate pair of apiKey and secret key.\n\nFor your security, your API Secret will only be returned at the time it is created. If you lose it, you will need to delete your API key and set up a new one.\n\n#### Error Codes\n\n| Code | Message |\n| --- | --- |\n| 1 | System is unavailable |\n| 100 | Missing or invalid parameter: \\[FieldName\\] |\n| 101 | \\[FieldName\\] not found |\n| 102 | label already exists |\n| `(REMOVED v1.43.0)`  <br>60002 | Allowed and blocked instruments/`(NEW v1.42.0)` instrumentGroups can not be filled for a single apiKey |",
+        "description": "This API allows to create a new apiKey for a specific MP.\nAs a response system will generate pair of apiKey and secret key.\n\nFor your security, your API Secret will only be returned at the time it is created. If you lose it, you will need to delete your API key and set up a new one.\n\n#### Error Codes\n\n| Code | Message |\n| --- | --- |\n| 1 | System is unavailable |\n| 100 | Missing or invalid parameter: \\[FieldName\\] |\n| 101 | \\[FieldName\\] not found |\n| 102 | label already exists |",
         "parameters": [
           {
             "name": "mpId",
@@ -5222,7 +5231,7 @@
         "tags": [
           "Accounts"
         ],
-        "description": "This API allows to get a list of all accounts with their details.",
+        "description": "This API allows to get a list of all accounts with their details.\n\n#### (NEW v1.59.0) Prefix & Suffix\n\n| Pattern Type | Pattern |\n| --- | --- |\n| Contains \"X\" | X |\n| Starts with \"X\" | X\\* |\n| Ends with \"X\" | \\*X |\n| Equal to 'X' | 'X' |\n\n#### (NEW v1.59.0) Get Accounts - Error Codes\n\n| Code | Message |\n| --- | --- |\n| 1 | System is unavailable |\n| 10001 | Permission denied |\n| 100 | Missing or invalid parameter: \\[FieldName\\] |",
         "parameters": [
           {
             "name": "ids",
@@ -5234,7 +5243,7 @@
                 "type": "integer"
               }
             },
-            "description": "List of accounts ids\n\nPass multiple values with bracket notation: `?ids[]={}&ids[]={}`",
+            "description": "List of accounts ids\n\nPass multiple values with bracket notation: `?ids[]=value1&ids[]=value2`",
             "style": "form",
             "explode": true
           },
@@ -5275,7 +5284,7 @@
                 "type": "string"
               }
             },
-            "description": "List of types\n\nPass multiple values with bracket notation: `?types[]={}&types[]={}`",
+            "description": "List of types\n\nPass multiple values with bracket notation: `?types[]=value1&types[]=value2`",
             "style": "form",
             "explode": true
           },
@@ -5336,11 +5345,15 @@
                   "type": "string"
                 },
                 "direction": {
-                  "type": "string"
+                  "type": "string",
+                  "enum": [
+                    "Asc",
+                    "Desc"
+                  ]
                 }
               }
             },
-            "description": "object with 2 parameters:\n- field (String)\n- direction (Asc, Desc)\nAllowed values for field:\n- name : with case-insensitive\nIf nothing was sent the default is [name, Asc]",
+            "description": "Sort order. Usage: `?orderBy[field]=symbol&orderBy[direction]=Desc`\n\nIf not sent, defaults to [symbol, Asc]",
             "style": "deepObject",
             "explode": true
           }
@@ -6007,7 +6020,7 @@
         "tags": [
           "Tick Size"
         ],
-        "description": "This API allows to create a new TickSize.\n\nID will be returned in the response, this ID is the unique identifier of the TickSize and should be used when sending update commands.\n\nNote: this ID can be retrieved via Get TickSizes API.\n\n#### Create TickSize- Error Codes\n\n| Code | Message |\n| --- | --- |\n| 1 | System is unavailable |\n| 100 | Missing or invalid parameter: \\[FieldName\\] |\n| 101 `new` | Max number of ticksizes (items) is 25 |\n| 102 | name already exists |\n| 10001 | Permission denied |",
+        "description": "This API allows to create a new TickSize.\n\nID will be returned in the response, this ID is the unique identifier of the TickSize and should be used when sending update commands.\n\nNote: this ID can be retrieved via Get TickSizes API.\n\n#### Create TickSize- Error Codes\n\n| Code | Message |\n| --- | --- |\n| 1 | System is unavailable |\n| 100 | Missing or invalid parameter: \\[FieldName\\] |\n| 101 `new` | Max number of ticksizes (items) is 25  <br>  <br>`(NEW v1.59.0)` Can’t change status to Disabled when \\[entity\\] with this Tick Size Table exist  <br>\\- entity: Instruments |\n| 102 | name already exists |\n| 10001 | Permission denied |",
         "parameters": [],
         "responses": {
           "200": {
