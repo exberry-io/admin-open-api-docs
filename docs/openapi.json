@@ -2,7 +2,7 @@
   "openapi": "3.0.3",
   "info": {
     "title": "Exberry Admin API",
-    "version": "1.59.2",
+    "version": "1.59.3",
     "description": "Exberry Admin API allows managing exchange static data (instruments, trading calendars and more) as well as sending operational commands (EOD, halt trading and more).\n\n**Sandbox environment endpoint:** `https://admin-api.uat.exberry-uat.io`\n\n**Guidelines:**\n- All numbers are stringified unless explicitly mentioned otherwise. Stringified integers are marked with pattern `^-?[0-9]+$`; stringified decimals with `format: decimal`.\n- Optional fields should be omitted from request if not required\n- System ignores any additional parameter that are sent on request body but was not specified in this document\n\n**HTTP Error Codes:**\n- 400: Maximum request size exceeded (60KB) or Invalid JSON\n- 401: Invalid token\n- 403: Authentication and authorization errors\n- 404: Route not found\n- 500: Any other error\n- 503: System not available\n- 504: Timeout",
     "contact": {
       "name": "Exberry Support",
@@ -3431,6 +3431,370 @@
         }
       }
     },
+    "/api/mps": {
+      "post": {
+        "operationId": "Create_MP",
+        "summary": "Create MP",
+        "tags": [
+          "MPs"
+        ],
+        "description": "This API allows to create a new MP.\n\nID will be returned in the response, this ID is the unique identifier of the MP and should be used when sending update commands.\n\nNote: this ID can be retrieved via Get MPs API.\n\n#### Create MP- Error Codes\n\n| Code | Message |\n| --- | --- |\n| 1 | System is unavailable |\n| 100 | Missing or invalid parameter: \\[FieldName\\] |\n| 102 | \\[FieldName\\] already exists |\n| 10001 | Permission denied |",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "type": "string",
+                      "maxLength": 30,
+                      "pattern": "^[ -~]*$",
+                      "description": "Unique MP Name"
+                    },
+                    "compIds": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "maxLength": 16,
+                        "pattern": "^[ -~]*$"
+                      },
+                      "description": "Unique compId list to be configured on FIX connection for that MP"
+                    },
+                    "id": {
+                      "type": "string",
+                      "pattern": "^[0-9]+$",
+                      "description": "MP ID (Not part of request body in Create/ Update MP)"
+                    }
+                  }
+                },
+                "example": {
+                  "name": "MP1 Test",
+                  "compIds": [
+                    "compId1"
+                  ],
+                  "id": "2087505361"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Failure",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "integer"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "example": {
+                  "code": 102,
+                  "message": "Name already exists"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MarketParticipant"
+              },
+              "example": {
+                "name": "MP1 Test",
+                "compIds": [
+                  "compId1"
+                ]
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "operationId": "Get_MPs",
+        "summary": "Get MPs",
+        "tags": [
+          "MPs"
+        ],
+        "description": "This API allows to get a list of all MPs with their details.",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "name": {
+                        "type": "string",
+                        "maxLength": 30,
+                        "pattern": "^[ -~]*$",
+                        "description": "Unique MP Name"
+                      },
+                      "id": {
+                        "type": "string",
+                        "pattern": "^[0-9]+$",
+                        "description": "MP ID (Not part of request body in Create/ Update MP)"
+                      },
+                      "compIds": {
+                        "type": "array",
+                        "items": {
+                          "type": "string",
+                          "maxLength": 16,
+                          "pattern": "^[ -~]*$"
+                        },
+                        "description": "Unique compId list to be configured on FIX connection for that MP"
+                      }
+                    }
+                  }
+                },
+                "example": [
+                  {
+                    "name": "MP2 Tst1",
+                    "id": "2087505299"
+                  },
+                  {
+                    "name": "MP1 Test",
+                    "compIds": [
+                      "compId1"
+                    ],
+                    "id": "2087505361"
+                  }
+                ]
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      }
+    },
+    "/api/mps/{mpId}": {
+      "put": {
+        "operationId": "Update_MP",
+        "summary": "Update MP",
+        "tags": [
+          "MPs"
+        ],
+        "description": "This API allows to update existing MP.\n\n#### Update MP- Error Codes\n\nAll validations in create instrument and the below\n\n| Code | Message |\n| --- | --- |\n| 101 | \\[FieldName\\] not found |",
+        "parameters": [
+          {
+            "name": "mpId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The mpId identifier"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "type": "string",
+                      "maxLength": 30,
+                      "pattern": "^[ -~]*$",
+                      "description": "Unique MP Name"
+                    },
+                    "compId": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "id": {
+                      "type": "string",
+                      "pattern": "^[0-9]+$",
+                      "description": "MP ID (Not part of request body in Create/ Update MP)"
+                    },
+                    "projectId": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "example": {
+                  "name": "newName",
+                  "compId": [
+                    "newCompId"
+                  ],
+                  "id": "2087505352",
+                  "projectId": "115"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Failure",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "integer"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "example": {
+                  "code": 101,
+                  "message": "MP not found"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MarketParticipant"
+              },
+              "example": {
+                "name": "newName",
+                "compIds": [
+                  "newCompId"
+                ]
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "operationId": "Get_MP",
+        "summary": "Get MP",
+        "tags": [
+          "MPs"
+        ],
+        "description": "This API allows to get a single MP details.",
+        "parameters": [
+          {
+            "name": "mpId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The mpId identifier"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "type": "string",
+                      "maxLength": 30,
+                      "pattern": "^[ -~]*$",
+                      "description": "Unique MP Name"
+                    },
+                    "compIds": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "maxLength": 16,
+                        "pattern": "^[ -~]*$"
+                      },
+                      "description": "Unique compId list to be configured on FIX connection for that MP"
+                    },
+                    "id": {
+                      "type": "string",
+                      "pattern": "^[0-9]+$",
+                      "description": "MP ID (Not part of request body in Create/ Update MP)"
+                    }
+                  }
+                },
+                "example": {
+                  "name": "MP1 Test",
+                  "compIds": [
+                    "compId1"
+                  ],
+                  "id": "2087505361"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      }
+    },
     "/api/mps/{mpId}/api-keys": {
       "post": {
         "operationId": "Create_API_Key",
@@ -3910,14 +4274,14 @@
         }
       }
     },
-    "/api/mps": {
+        "/api/mp-groups": {
       "post": {
-        "operationId": "Create_MP",
-        "summary": "Create MP",
+        "operationId": "Create_MP_Group",
+        "summary": "Create MP Group",
         "tags": [
-          "MPs"
+          "MP Groups"
         ],
-        "description": "This API allows to create a new MP.\n\nID will be returned in the response, this ID is the unique identifier of the MP and should be used when sending update commands.\n\nNote: this ID can be retrieved via Get MPs API.\n\n#### Create MP- Error Codes\n\n| Code | Message |\n| --- | --- |\n| 1 | System is unavailable |\n| 100 | Missing or invalid parameter: \\[FieldName\\] |\n| 102 | \\[FieldName\\] already exists |\n| 10001 | Permission denied |",
+        "description": "#### Create MP Group- Error Codes\n\n| Code | Message |\n| --- | --- |\n| 1 | System is unavailable |\n| 100 | Missing or invalid parameter: \\[FieldName\\] |\n| 101 | \\[FieldName\\] not found |\n| 102 | \\[FieldName\\] already exists |\n| 10001 | Permission denied |",
         "parameters": [],
         "responses": {
           "200": {
@@ -3927,34 +4291,34 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "name": {
-                      "type": "string",
-                      "maxLength": 30,
-                      "pattern": "^[ -~]*$",
-                      "description": "Unique MP Name"
-                    },
-                    "compIds": {
-                      "type": "array",
-                      "items": {
-                        "type": "string",
-                        "maxLength": 16,
-                        "pattern": "^[ -~]*$"
-                      },
-                      "description": "Unique compId list to be configured on FIX connection for that MP"
-                    },
                     "id": {
                       "type": "string",
                       "pattern": "^[0-9]+$",
-                      "description": "MP ID (Not part of request body in Create/ Update MP)"
+                      "description": "MP Group ID (Not part of request body in Create/ Update MP Group)"
+                    },
+                    "name": {
+                      "type": "string",
+                      "maxLength": 50,
+                      "pattern": "^[ -~]*$",
+                      "description": "Unique MP Group Name"
+                    },
+                    "mpIds": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "pattern": "^[0-9]+$"
+                      },
+                      "description": "List of MPs that this group contains, for all MPs, do not send this property"
                     }
                   }
                 },
                 "example": {
-                  "name": "MP1 Test",
-                  "compIds": [
-                    "compId1"
-                  ],
-                  "id": "2087505361"
+                  "id": "98",
+                  "name": "MPGroup2",
+                  "mpIds": [
+                    "2087505414",
+                    "2087505443"
+                  ]
                 }
               }
             }
@@ -3975,8 +4339,8 @@
                   }
                 },
                 "example": {
-                  "code": 102,
-                  "message": "Name already exists"
+                  "code": 101,
+                  "message": "mpId not found"
                 }
               }
             }
@@ -3999,12 +4363,13 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/MarketParticipant"
+                "$ref": "#/components/schemas/MpGroup"
               },
               "example": {
-                "name": "MP1 Test",
-                "compIds": [
-                  "compId1"
+                "name": "MPGroup1",
+                "mpIds": [
+                  "2087505299",
+                  "2087505361"
                 ]
               }
             }
@@ -4012,12 +4377,12 @@
         }
       },
       "get": {
-        "operationId": "Get_MPs",
-        "summary": "Get MPs",
+        "operationId": "Get_MP_Groups",
+        "summary": "Get MP Groups",
         "tags": [
-          "MPs"
+          "MP Groups"
         ],
-        "description": "This API allows to get a list of all MPs with their details.",
+        "description": "",
         "parameters": [],
         "responses": {
           "200": {
@@ -4029,40 +4394,39 @@
                   "items": {
                     "type": "object",
                     "properties": {
-                      "name": {
-                        "type": "string",
-                        "maxLength": 30,
-                        "pattern": "^[ -~]*$",
-                        "description": "Unique MP Name"
-                      },
                       "id": {
                         "type": "string",
                         "pattern": "^[0-9]+$",
-                        "description": "MP ID (Not part of request body in Create/ Update MP)"
+                        "description": "MP Group ID (Not part of request body in Create/ Update MP Group)"
                       },
-                      "compIds": {
+                      "name": {
+                        "type": "string",
+                        "maxLength": 50,
+                        "pattern": "^[ -~]*$",
+                        "description": "Unique MP Group Name"
+                      },
+                      "mpIds": {
                         "type": "array",
                         "items": {
                           "type": "string",
-                          "maxLength": 16,
-                          "pattern": "^[ -~]*$"
-                        },
-                        "description": "Unique compId list to be configured on FIX connection for that MP"
+                          "pattern": "^[0-9]+$"
+                        }
                       }
                     }
                   }
                 },
                 "example": [
                   {
-                    "name": "MP2 Tst1",
-                    "id": "2087505299"
+                    "id": "1",
+                    "name": "Group66",
+                    "mpIds": [
+                      "449683954",
+                      "813105313"
+                    ]
                   },
                   {
-                    "name": "MP1 Test",
-                    "compIds": [
-                      "compId1"
-                    ],
-                    "id": "2087505361"
+                    "id": "2",
+                    "name": "Group444"
                   }
                 ]
               }
@@ -4086,23 +4450,23 @@
         }
       }
     },
-    "/api/mps/{mpId}": {
+    "/api/mp-groups/{groupId}": {
       "put": {
-        "operationId": "Update_MP",
-        "summary": "Update MP",
+        "operationId": "Update_MP_Group",
+        "summary": "Update MP Group",
         "tags": [
-          "MPs"
+          "MP Groups"
         ],
-        "description": "This API allows to update existing MP.\n\n#### Update MP- Error Codes\n\nAll validations in create instrument and the below\n\n| Code | Message |\n| --- | --- |\n| 101 | \\[FieldName\\] not found |",
+        "description": "#### Update MP Group- Error Codes\n\nAll validations in create instrument and the below\n\n| Code | Message |\n| --- | --- |\n| 101 | \\[FieldName\\] not found |",
         "parameters": [
           {
-            "name": "mpId",
+            "name": "groupId",
             "in": "path",
             "required": true,
             "schema": {
               "type": "string"
             },
-            "description": "The mpId identifier"
+            "description": "The groupId identifier"
           }
         ],
         "responses": {
@@ -4113,57 +4477,41 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "name": {
-                      "type": "string",
-                      "maxLength": 30,
-                      "pattern": "^[ -~]*$",
-                      "description": "Unique MP Name"
-                    },
-                    "compId": {
-                      "type": "array",
-                      "items": {
-                        "type": "string"
-                      }
-                    },
                     "id": {
                       "type": "string",
                       "pattern": "^[0-9]+$",
-                      "description": "MP ID (Not part of request body in Create/ Update MP)"
+                      "description": "MP Group ID (Not part of request body in Create/ Update MP Group)"
                     },
-                    "projectId": {
-                      "type": "string"
+                    "name": {
+                      "type": "string",
+                      "maxLength": 50,
+                      "pattern": "^[ -~]*$",
+                      "description": "Unique MP Group Name"
+                    },
+                    "compId": {
+                      "type": "string",
+                      "maxLength": 16,
+                      "pattern": "^[ -~]*$",
+                      "description": "Unique compId to be configured on FIX connection for that MP Group"
+                    },
+                    "mpIds": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "pattern": "^[0-9]+$"
+                      },
+                      "description": "List of MPs that this group contains, for all MPs, do not send this property"
                     }
                   }
                 },
                 "example": {
-                  "name": "newName",
-                  "compId": [
-                    "newCompId"
-                  ],
-                  "id": "2087505352",
-                  "projectId": "115"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Failure",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "code": {
-                      "type": "integer"
-                    },
-                    "message": {
-                      "type": "string"
-                    }
-                  }
-                },
-                "example": {
-                  "code": 101,
-                  "message": "MP not found"
+                  "id": "97",
+                  "name": "MPGroup1",
+                  "compId": "test",
+                  "mpIds": [
+                    "2087505414",
+                    "2087505443"
+                  ]
                 }
               }
             }
@@ -4179,6 +4527,9 @@
           },
           "404": {
             "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
           }
         },
         "requestBody": {
@@ -4186,12 +4537,14 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/MarketParticipant"
+                "$ref": "#/components/schemas/MpGroup"
               },
               "example": {
-                "name": "newName",
-                "compIds": [
-                  "newCompId"
+                "name": "Broker777",
+                "compId": "hellocomp",
+                "mpIds": [
+                  "1794788082",
+                  "1809367041"
                 ]
               }
             }
@@ -4199,21 +4552,21 @@
         }
       },
       "get": {
-        "operationId": "Get_MP",
-        "summary": "Get MP",
+        "operationId": "Get_MP_Group",
+        "summary": "Get MP Group",
         "tags": [
-          "MPs"
+          "MP Groups"
         ],
-        "description": "This API allows to get a single MP details.",
+        "description": "",
         "parameters": [
           {
-            "name": "mpId",
+            "name": "groupId",
             "in": "path",
             "required": true,
             "schema": {
               "type": "string"
             },
-            "description": "The mpId identifier"
+            "description": "The groupId identifier"
           }
         ],
         "responses": {
@@ -4224,34 +4577,34 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "name": {
-                      "type": "string",
-                      "maxLength": 30,
-                      "pattern": "^[ -~]*$",
-                      "description": "Unique MP Name"
-                    },
-                    "compIds": {
-                      "type": "array",
-                      "items": {
-                        "type": "string",
-                        "maxLength": 16,
-                        "pattern": "^[ -~]*$"
-                      },
-                      "description": "Unique compId list to be configured on FIX connection for that MP"
-                    },
                     "id": {
                       "type": "string",
                       "pattern": "^[0-9]+$",
-                      "description": "MP ID (Not part of request body in Create/ Update MP)"
+                      "description": "MP Group ID (Not part of request body in Create/ Update MP Group)"
+                    },
+                    "name": {
+                      "type": "string",
+                      "maxLength": 50,
+                      "pattern": "^[ -~]*$",
+                      "description": "Unique MP Group Name"
+                    },
+                    "mpIds": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "pattern": "^[0-9]+$"
+                      },
+                      "description": "List of MPs that this group contains, for all MPs, do not send this property"
                     }
                   }
                 },
                 "example": {
-                  "name": "MP1 Test",
-                  "compIds": [
-                    "compId1"
-                  ],
-                  "id": "2087505361"
+                  "id": "97",
+                  "name": "MPGroup2",
+                  "mpIds": [
+                    "2087505443",
+                    "2087505414"
+                  ]
                 }
               }
             }
@@ -4744,359 +5097,6 @@
                   ],
                   "mpGroupId": "2",
                   "apiKey": "21835516-67fe-46db-a85b-200ace4333e4"
-                }
-              }
-            }
-          },
-          "400": {
-            "$ref": "#/components/responses/BadRequest"
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
-          "403": {
-            "$ref": "#/components/responses/Forbidden"
-          },
-          "404": {
-            "$ref": "#/components/responses/NotFound"
-          },
-          "500": {
-            "$ref": "#/components/responses/ServerError"
-          }
-        }
-      }
-    },
-    "/api/mp-groups": {
-      "post": {
-        "operationId": "Create_MP_Group",
-        "summary": "Create MP Group",
-        "tags": [
-          "MP Groups"
-        ],
-        "description": "#### Create MP Group- Error Codes\n\n| Code | Message |\n| --- | --- |\n| 1 | System is unavailable |\n| 100 | Missing or invalid parameter: \\[FieldName\\] |\n| 101 | \\[FieldName\\] not found |\n| 102 | \\[FieldName\\] already exists |\n| 10001 | Permission denied |",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "Success",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "id": {
-                      "type": "string",
-                      "pattern": "^[0-9]+$",
-                      "description": "MP Group ID (Not part of request body in Create/ Update MP Group)"
-                    },
-                    "name": {
-                      "type": "string",
-                      "maxLength": 50,
-                      "pattern": "^[ -~]*$",
-                      "description": "Unique MP Group Name"
-                    },
-                    "mpIds": {
-                      "type": "array",
-                      "items": {
-                        "type": "string",
-                        "pattern": "^[0-9]+$"
-                      },
-                      "description": "List of MPs that this group contains, for all MPs, do not send this property"
-                    }
-                  }
-                },
-                "example": {
-                  "id": "98",
-                  "name": "MPGroup2",
-                  "mpIds": [
-                    "2087505414",
-                    "2087505443"
-                  ]
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Failure",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "code": {
-                      "type": "integer"
-                    },
-                    "message": {
-                      "type": "string"
-                    }
-                  }
-                },
-                "example": {
-                  "code": 101,
-                  "message": "mpId not found"
-                }
-              }
-            }
-          },
-          "400": {
-            "$ref": "#/components/responses/BadRequest"
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
-          "403": {
-            "$ref": "#/components/responses/Forbidden"
-          },
-          "404": {
-            "$ref": "#/components/responses/NotFound"
-          }
-        },
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/MpGroup"
-              },
-              "example": {
-                "name": "MPGroup1",
-                "mpIds": [
-                  "2087505299",
-                  "2087505361"
-                ]
-              }
-            }
-          }
-        }
-      },
-      "get": {
-        "operationId": "Get_MP_Groups",
-        "summary": "Get MP Groups",
-        "tags": [
-          "MP Groups"
-        ],
-        "description": "",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "Success",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "properties": {
-                      "id": {
-                        "type": "string",
-                        "pattern": "^[0-9]+$",
-                        "description": "MP Group ID (Not part of request body in Create/ Update MP Group)"
-                      },
-                      "name": {
-                        "type": "string",
-                        "maxLength": 50,
-                        "pattern": "^[ -~]*$",
-                        "description": "Unique MP Group Name"
-                      },
-                      "mpIds": {
-                        "type": "array",
-                        "items": {
-                          "type": "string",
-                          "pattern": "^[0-9]+$"
-                        }
-                      }
-                    }
-                  }
-                },
-                "example": [
-                  {
-                    "id": "1",
-                    "name": "Group66",
-                    "mpIds": [
-                      "449683954",
-                      "813105313"
-                    ]
-                  },
-                  {
-                    "id": "2",
-                    "name": "Group444"
-                  }
-                ]
-              }
-            }
-          },
-          "400": {
-            "$ref": "#/components/responses/BadRequest"
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
-          "403": {
-            "$ref": "#/components/responses/Forbidden"
-          },
-          "404": {
-            "$ref": "#/components/responses/NotFound"
-          },
-          "500": {
-            "$ref": "#/components/responses/ServerError"
-          }
-        }
-      }
-    },
-    "/api/mp-groups/{groupId}": {
-      "put": {
-        "operationId": "Update_MP_Group",
-        "summary": "Update MP Group",
-        "tags": [
-          "MP Groups"
-        ],
-        "description": "#### Update MP Group- Error Codes\n\nAll validations in create instrument and the below\n\n| Code | Message |\n| --- | --- |\n| 101 | \\[FieldName\\] not found |",
-        "parameters": [
-          {
-            "name": "groupId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            },
-            "description": "The groupId identifier"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Success",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "id": {
-                      "type": "string",
-                      "pattern": "^[0-9]+$",
-                      "description": "MP Group ID (Not part of request body in Create/ Update MP Group)"
-                    },
-                    "name": {
-                      "type": "string",
-                      "maxLength": 50,
-                      "pattern": "^[ -~]*$",
-                      "description": "Unique MP Group Name"
-                    },
-                    "compId": {
-                      "type": "string",
-                      "maxLength": 16,
-                      "pattern": "^[ -~]*$",
-                      "description": "Unique compId to be configured on FIX connection for that MP Group"
-                    },
-                    "mpIds": {
-                      "type": "array",
-                      "items": {
-                        "type": "string",
-                        "pattern": "^[0-9]+$"
-                      },
-                      "description": "List of MPs that this group contains, for all MPs, do not send this property"
-                    }
-                  }
-                },
-                "example": {
-                  "id": "97",
-                  "name": "MPGroup1",
-                  "compId": "test",
-                  "mpIds": [
-                    "2087505414",
-                    "2087505443"
-                  ]
-                }
-              }
-            }
-          },
-          "400": {
-            "$ref": "#/components/responses/BadRequest"
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
-          "403": {
-            "$ref": "#/components/responses/Forbidden"
-          },
-          "404": {
-            "$ref": "#/components/responses/NotFound"
-          },
-          "500": {
-            "$ref": "#/components/responses/ServerError"
-          }
-        },
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/MpGroup"
-              },
-              "example": {
-                "name": "Broker777",
-                "compId": "hellocomp",
-                "mpIds": [
-                  "1794788082",
-                  "1809367041"
-                ]
-              }
-            }
-          }
-        }
-      },
-      "get": {
-        "operationId": "Get_MP_Group",
-        "summary": "Get MP Group",
-        "tags": [
-          "MP Groups"
-        ],
-        "description": "",
-        "parameters": [
-          {
-            "name": "groupId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            },
-            "description": "The groupId identifier"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Success",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "id": {
-                      "type": "string",
-                      "pattern": "^[0-9]+$",
-                      "description": "MP Group ID (Not part of request body in Create/ Update MP Group)"
-                    },
-                    "name": {
-                      "type": "string",
-                      "maxLength": 50,
-                      "pattern": "^[ -~]*$",
-                      "description": "Unique MP Group Name"
-                    },
-                    "mpIds": {
-                      "type": "array",
-                      "items": {
-                        "type": "string",
-                        "pattern": "^[0-9]+$"
-                      },
-                      "description": "List of MPs that this group contains, for all MPs, do not send this property"
-                    }
-                  }
-                },
-                "example": {
-                  "id": "97",
-                  "name": "MPGroup2",
-                  "mpIds": [
-                    "2087505443",
-                    "2087505414"
-                  ]
                 }
               }
             }
