@@ -80,8 +80,89 @@ states clearly what the source of truth is (the spec, nothing upstream of it).
 **Decision:** AsyncAPI 3.0 for Trading/Market Data (request-reply support fits the sid-correlated RPC style); GitBook remains the narrative front door; reference sections generated from specs.
 **Why:** same spec-first benefits as OpenAPI for the REST side; only serious standard for event-driven APIs.
 
+## 15. Property display order: renderer defaults (required first, then alphabetical)
+**Decision:** keep Scalar's default ordering — `orderRequiredPropertiesFirst: true`,
+`orderSchemaPropertiesBy: 'alpha'`. No overrides in `docs/index.html`.
+**Why:** an integrator's first question is "what must I send?" — grouping required
+properties at the top answers it at a glance, and alphabetical order within each group
+makes any specific field findable without knowing the source layout. The alternative
+(`'preserve'`) would honor the hand-authored grouping in the source tables (e.g. `trigger`
+next to its dependent `days`/`startTimes`), but that benefit is smaller than predictability.
+**Consequences:** display order is independent of property order in `docs/openapi.json` —
+no need to maintain deliberate ordering when adding fields; related-field context lives in
+descriptions (e.g. "Mandatory if trigger = TimeBased"), not adjacency.
+**Reversal:** two config lines in `docs/index.html` (`orderSchemaPropertiesBy: 'preserve'`,
+`orderRequiredPropertiesFirst: false`) — pure rendering change, no spec impact.
+
+## 16. Descriptions are verbatim from the Postman collection
+**Decision:** the generator does NOT strip version markers (`NEW v1.x`, `CHANGED v1.x`,
+`DEPRECATED v1.x`) or otherwise editorialize description text. Whatever the collection says
+is what the spec says. Markers are curated **at the source**, in Postman.
+**Why:** marker-stripping rules cannot distinguish a marker the team wants kept from one it
+wants gone, and they silently diverge from the source. Editing in Postman puts that judgement
+where it belongs and keeps the collection the single truth for prose. (Confirmed in the 1.59
+pass: markers the team had cleaned disappeared; markers deliberately kept survived.)
+**Exception:** field-level markers consumed as *flags* (`read-only`, `Optional`,
+`DEPRECATED` on a field name) are removed from the rendered name/description, because their
+meaning has moved into a schema keyword — see #8 and #17.
+
+## 17. `readOnly` is derived from path parameters (plus explicit source markers)
+**Decision:** two complementary mechanisms mark a property read-only:
+1. an explicit `` `read-only` `` marker in the Postman field table (e.g. `secret`, `apiKey`,
+   `ownerId`, `ownerType`);
+2. automatic inference — a model property is read-only when its name matches a **path
+   parameter of the endpoints that use that model** (e.g. `MpApiKey.mpId`, supplied via
+   `/api/mps/{mpId}/api-keys`), plus the standing `id` rule.
+Read-only properties are excluded from `required`.
+**Why:** a value supplied through the URL is not part of the request body, so listing it in
+the body's `required` asserts something false. The requirement is already expressed once and
+correctly — on the path parameter (`required: true`). Deriving from the path shape rather
+than a hand-placed marker means it cannot drift when endpoints move.
+**Scoping matters:** inference is per-model, not global — `Account.mpId` stays writable and
+required, because accounts live at `/api/accounts` where `mpId` is not a path parameter.
+**Note:** `MpGroupApiKey.mpGroupId` is declared read-only explicitly, since the path
+parameter (`groupId`) and the property (`mpGroupId`) differ in name.
+**Considered and rejected:** keeping a read-only property in `required` (spec-legal — the
+requirement then applies to responses only) because many renderers and generators ignore
+that subtlety and still show a "required" badge on the request body.
+
+## 18. Entity CRUD responses reference the model, by path — not by example overlap
+**Decision:** for entity CRUD paths, the 200 response schema points at the model regardless
+of how abbreviated the saved Postman example is: single entity → `$ref`; bare array →
+`items: $ref`; list wrapper (`{entities: [], totalCount}`) → the array's `items: $ref`.
+**Why:** the API returns the full entity on create/update/get (confirmed against the live
+API), but many saved examples echo only 3–5 fields, so the earlier ≥70 %-overlap heuristic
+declined to substitute the model and 24 responses were under-documented. Deciding by path
+rather than by example makes the schema state the contract while examples stay illustrative.
+Side effect: ~24 KB smaller spec (fewer duplicated inline schemas).
+**Excluded — action sub-resources**, which return their own small payloads:
+`POST …/{id}/archive` (empty object), `POST …/{id}/end-of-day` (`{id, lastEodDate}`),
+`PUT …/candle-adjustments`.
+
+## 19. `MpGroupApiKey` is a standalone model (documented exception to #3)
+**Decision:** MP Group API keys are modeled as their own schema rather than an
+`allOf` alias of `MpApiKey`. It carries only the applicable fields — `label`, `permissions`
+(8-value group subset enum), `mpGroupId`, `apiKey`, `secret`, `ownerId`, `ownerType` — and
+omits `mpId`, `accountId`, `allowedInstrumentGroupIds`, `cancelOnDisconncet`.
+**Why:** OpenAPI 3.0 `allOf` can only add properties, never remove them, so an alias would
+keep advertising four fields that do not apply to group keys.
+**How the DRY benefit is retained:** the shared field definitions are **copied from
+`MpApiKey` at generation time**, so constraint or description changes in Postman propagate
+automatically. The `permissions` description is deliberately short and points to `MpApiKey`
+for the full per-permission list.
+
+## 20. API-key paths render after their parent entity's CRUD operations
+**Decision:** generated path order places `…/api-keys` sub-resources after the parent
+entity's own operations (for both MPs and MP Groups).
+**Why:** depth-first traversal of the Postman folders emitted the `API Key` subfolder before
+its parent's endpoints, so the docs opened with API-key operations before the entity itself.
+Ordering is presentation-only — it does not affect the contract.
+
 ## Operational lessons (keep honoring)
 - Every `open()` in tooling: `encoding='utf-8'` (Windows cp1252 default bit us); `ensure_ascii=False` on output.
 - GitHub Pages: after a failed deploy, trigger a **fresh run** — never "Re-run all jobs" (duplicate-artifact error).
 - One canonical script name in the repo; version suffixes only in downloads.
 - When the generated artifact's size jumps unexpectedly, investigate before shipping — a +500-line surprise caught a real regression once.
+- **Until the Phase-0 flip, every spec fix belongs in the generator, never only in `openapi.json`.** Hand edits are erased by the next run — this bit twice (the API-key naming, and the `statuses` enum).
+- **Check the source before "fixing" the output.** If unexpected text appears in the spec, grep the collection for it first; several rounds were lost stripping a marker that a stale local copy — not the real source — contained.
+- Keep exactly one collection export in the working directory. Two versions of the same file is how the wrong input gets read and the wrong conclusion drawn.
