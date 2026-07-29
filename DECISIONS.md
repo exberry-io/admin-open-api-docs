@@ -53,6 +53,11 @@ Structural changes are edited directly in the JSON.
 surface; JSON's single-line strings make them error-prone. Structural edits are rare and
 tool-assisted, so JSON is acceptable there.
 **Trade-off:** two files instead of one — mitigated by the CI drift check.
+**Curated vs source-derived prose:** re-extracting the overlay from a fresh generation
+refreshes the SOURCE-derived text (tags, operations) but must never clobber CURATED text.
+`info.description` is curated by definition (the generator's built-in text is only a
+fallback), so `extract_text_overrides.py` preserves it. This was learned by losing the
+maker-checker intro section and reverting a corrected pattern note during a re-extraction.
 
 ## 11. Flat tags, no folder hierarchy
 **Decision:** one tag per top-level Postman folder; `x-tagGroups` tried and rolled back.
@@ -211,6 +216,60 @@ and each is a reason to eyeball a regenerated entity rather than trust it blindl
   (right for entity models) was wrong for `POST /api/operations/news`, where `id` is
   client-supplied. Exclusion now follows the read-only flag, not the field name.
 
+## 24. Numeric canon: every business number is a stringified number
+**Decision:** all numeric fields are `type: string` with a pattern — integers
+`^[0-9]+$`, decimals `format: decimal` + `^-?[0-9]+(\.[0-9]+)?$`. Example values are
+normalised to the string form to match. The single exception is the error body's `code`,
+which stays `integer`.
+**Why:** responses **always** return numbers as strings, and requests accept either a JSON
+number or its string form — so the string is the only representation that is always correct,
+and the model is shared between request and response (#3). Evidence: every numeric field in
+the saved response examples is a string (`id: "12208"`, `minQuantity: "0.0001"`,
+`priority: "1"`), while every error `code` in the collection is an int (145 of 145).
+**Considered and rejected:** `oneOf: [string, number]` per field. It is precise about request
+flexibility but wrong for responses, renders badly in Scalar (see #6), and produces awkward
+union types across ~68 fields in every generated SDK. The request flexibility is stated once
+in the API guidelines instead.
+
+## 25. All error responses share the `ErrorResponse` schema; examples stay per-endpoint
+**Decision:** every 4xx/5xx response points its schema at `ErrorResponse`, while keeping the
+endpoint's own example. The shared `components/responses` entries carry generic examples
+(400 `{code: 1, "Invalid JSON"}`, 401 `{code: 10000, "Invalid token"}`,
+404 `{code: 1, "Route not found"}`).
+**Why:** the body shape is identical everywhere, so 53 duplicated `{code, message}` objects
+bought nothing — but the 52 endpoint-specific messages ("symbol already exists for id:
+12208", "Wrong email or password") are genuinely useful and are what a reader wants to see.
+Sharing the schema and keeping the examples gets both; it also fixed 7 responses whose `code`
+had drifted to `string`.
+
+## 26. Components require reuse AND a definition that is equally true everywhere
+**Refines #4.** Reuse count alone does not justify a component — the shared definition must
+also mean the same thing at every reference site.
+- **`Party`** (`{id, source, role}`) is promoted: it appears 4× (place-order `parties`,
+  mass-cancel `targetParties`, enter-trade `buy`/`sell`) and a party is a party everywhere.
+  The three inline copies were documented inconsistently, so they were harmonised (`role` is a
+  stringified int at all sites; place-order had been missing that).
+- **The sort object** (`{field, direction}`) is deliberately **not** promoted despite appearing
+  3×: `field` means `symbol` on instruments, `name` on accounts, `exDate` on candle-adjustments.
+  A shared component forces a generic description exactly where the reader needs the specific
+  default — and renderers show the sub-field's *schema* description (#27), so the specificity
+  has to live there.
+
+## 27. Put information where the renderer displays it — and never fabricate prose
+Two rules learned the hard way on the `orderBy` parameter:
+- **Renderer-visible placement.** Scalar expands a `deepObject` query parameter into
+  `orderBy[field]` / `orderBy[direction]` rows and renders each sub-field's schema
+  description, **dropping the parameter-level description**. So per-endpoint defaults,
+  allowed values and the bracket-syntax sample all live on the sub-field schemas.
+  (Plain parameters like `limit` do show their own description — this applies to exploded
+  objects only.)
+- **No fabricated prose.** An earlier version *replaced* the parameter description with a
+  hardcoded string that read "defaults to [symbol, Asc]" for every endpoint — so Accounts and
+  Candle Adjustments advertised the wrong default for several versions. The generator now
+  strips only the structural scaffolding it has expressed in the schema and preserves
+  everything else verbatim, deriving samples from each endpoint's own documented default.
+  This is #16's principle applied to generated text rather than source text.
+
 ## Operational lessons (keep honoring)
 - Every `open()` in tooling: `encoding='utf-8'` (Windows cp1252 default bit us); `ensure_ascii=False` on output.
 - GitHub Pages: after a failed deploy, trigger a **fresh run** — never "Re-run all jobs" (duplicate-artifact error).
@@ -219,3 +278,5 @@ and each is a reason to eyeball a regenerated entity rather than trust it blindl
 - **Until the Phase-0 flip, every spec fix belongs in the generator, never only in `openapi.json`.** Hand edits are erased by the next run — this bit twice (the API-key naming, and the `statuses` enum).
 - **Check the source before "fixing" the output.** If unexpected text appears in the spec, grep the collection for it first; several rounds were lost stripping a marker that a stale local copy — not the real source — contained.
 - Keep exactly one collection export in the working directory. Two versions of the same file is how the wrong input gets read and the wrong conclusion drawn.
+- Verify a newly supplied collection before converting it (hash, endpoint count, a distinguishing marker). Exports often arrive under the same filename as an older one.
+- When a renderer does not show something, check *where* the information sits before changing *what* it says — the fix is usually placement, not content.
