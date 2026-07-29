@@ -2,7 +2,7 @@
   "openapi": "3.0.3",
   "info": {
     "title": "Exberry Admin API",
-    "version": "1.59.13",
+    "version": "1.59.21",
     "description": "Exberry Admin API allows managing exchange static data (instruments, trading calendars and more) as well as sending operational commands (EOD, halt trading and more).\n\n**Sandbox environment endpoint:** `https://admin-api.uat.exberry-uat.io`\n\n**Guidelines:**\n- Numeric values are documented as stringified numbers: responses always return them as strings, and requests accept either a JSON number or its string form. Stringified integers carry pattern `^[0-9]+$`; stringified decimals carry `format: decimal` and pattern `^-?[0-9]+(\\.[0-9]+)?$`. The only numeric JSON field is the error body's `code`.\n- Optional fields should be omitted from request if not required\n- System ignores any additional parameter that are sent on request body but was not specified in this document\n\n**HTTP Error Codes:**\n- 400: Maximum request size exceeded (60KB) or Invalid JSON\n- 401: Invalid token\n- 403: Authentication and authorization errors\n- 404: Route not found\n- 500: Any other error\n- 503: System not available\n- 504: Timeout\n\n**Maker-Checker approval flow** (to activate, contact the operations team):\n\nThe maker-checker process is a workflow that requires the approval of at least two individuals to agree on an action. It involves two parties:\n\n- **Maker**: the person who initiates the action (can always see their own requests and reject them)\n- **Checker**: the person who approves the action (cannot approve their own request)\n\nWhen a user requests an action (like update or create an instrument), the change does not happen immediately - e.g. it won't be shown in the instrument list. The change takes place only after approval. A super user with the right permission can override this flow.\n\nFor any action that is part of the flow, the request can include a `comment` field (String) - the maker's explanation of what the action contains, giving the checker the change context.\n\nInstead of the regular response message, any API request involved in the flow returns a `MakerCheckerRequest` entity (see the model below). Its `data` property contains the data model of the requested action, identical to the API specification for that action without maker-checker activated.",
     "contact": {
       "name": "Exberry Support",
@@ -1472,6 +1472,26 @@
           "permissions"
         ]
       },
+      "Party": {
+        "type": "object",
+        "description": "Order-level party (desk, client, algo...). Used by order and trade operations.",
+        "properties": {
+          "id": {
+            "type": "string",
+            "maxLength": 20,
+            "description": "Party id"
+          },
+          "source": {
+            "type": "string",
+            "description": "Party source"
+          },
+          "role": {
+            "type": "string",
+            "pattern": "^[0-9]+$",
+            "description": "Party role"
+          }
+        }
+      },
       "TickSizeTable": {
         "type": "object",
         "properties": {
@@ -1537,6 +1557,10 @@
           "application/json": {
             "schema": {
               "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "example": {
+              "code": 1,
+              "message": "Invalid JSON"
             }
           }
         }
@@ -1547,6 +1571,10 @@
           "application/json": {
             "schema": {
               "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "example": {
+              "code": 10000,
+              "message": "Invalid token"
             }
           }
         }
@@ -1567,6 +1595,10 @@
           "application/json": {
             "schema": {
               "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "example": {
+              "code": 1,
+              "message": "Route not found"
             }
           }
         }
@@ -1670,15 +1702,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "code": {
-                      "type": "integer"
-                    },
-                    "message": {
-                      "type": "string"
-                    }
-                  }
+                  "$ref": "#/components/schemas/ErrorResponse"
                 },
                 "example": {
                   "code": 2,
@@ -1772,15 +1796,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "code": {
-                      "type": "integer"
-                    },
-                    "message": {
-                      "type": "string"
-                    }
-                  }
+                  "$ref": "#/components/schemas/ErrorResponse"
                 },
                 "example": {
                   "code": 102,
@@ -2026,18 +2042,20 @@
               "type": "object",
               "properties": {
                 "field": {
-                  "type": "string"
+                  "type": "string",
+                  "description": "Field to sort by. Default: symbol.\n\nUsage: `?orderBy[field]=symbol&orderBy[direction]=Asc`"
                 },
                 "direction": {
                   "type": "string",
                   "enum": [
                     "Asc",
                     "Desc"
-                  ]
+                  ],
+                  "description": "Default: Asc."
                 }
               }
             },
-            "description": "Sort order. Usage: `?orderBy[field]=symbol&orderBy[direction]=Desc`\n\nIf not sent, defaults to [symbol, Asc]",
+            "description": "Usage: `?orderBy[field]=symbol&orderBy[direction]=Asc`\n\nIf nothing or invalid field was sent the default is [symbol, Asc]\nSample: `orderBy[field]=symbol`",
             "style": "deepObject",
             "explode": true
           }
@@ -2183,15 +2201,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "code": {
-                      "type": "integer"
-                    },
-                    "message": {
-                      "type": "string"
-                    }
-                  }
+                  "$ref": "#/components/schemas/ErrorResponse"
                 },
                 "example": {
                   "code": 10000,
@@ -2265,15 +2275,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "code": {
-                      "type": "integer"
-                    },
-                    "message": {
-                      "type": "string"
-                    }
-                  }
+                  "$ref": "#/components/schemas/ErrorResponse"
                 },
                 "example": {
                   "code": 101,
@@ -2465,15 +2467,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "code": {
-                      "type": "integer"
-                    },
-                    "message": {
-                      "type": "string"
-                    }
-                  }
+                  "$ref": "#/components/schemas/ErrorResponse"
                 },
                 "example": {
                   "code": 101,
@@ -2534,18 +2528,10 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "code": {
-                      "type": "string"
-                    },
-                    "message": {
-                      "type": "string"
-                    }
-                  }
+                  "$ref": "#/components/schemas/ErrorResponse"
                 },
                 "example": {
-                  "code": "102",
+                  "code": 102,
                   "message": "Disable the instrument before attempting to archive it"
                 }
               }
@@ -2596,15 +2582,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "code": {
-                      "type": "integer"
-                    },
-                    "message": {
-                      "type": "string"
-                    }
-                  }
+                  "$ref": "#/components/schemas/ErrorResponse"
                 },
                 "example": {
                   "code": 100,
@@ -2690,15 +2668,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "code": {
-                      "type": "integer"
-                    },
-                    "message": {
-                      "type": "string"
-                    }
-                  }
+                  "$ref": "#/components/schemas/ErrorResponse"
                 },
                 "example": {
                   "code": 10000,
@@ -2761,15 +2731,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "code": {
-                      "type": "integer"
-                    },
-                    "message": {
-                      "type": "string"
-                    }
-                  }
+                  "$ref": "#/components/schemas/ErrorResponse"
                 },
                 "example": {
                   "code": 100,
@@ -2845,15 +2807,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "code": {
-                      "type": "integer"
-                    },
-                    "message": {
-                      "type": "string"
-                    }
-                  }
+                  "$ref": "#/components/schemas/ErrorResponse"
                 },
                 "example": {
                   "code": 100,
@@ -2920,15 +2874,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "code": {
-                      "type": "integer"
-                    },
-                    "message": {
-                      "type": "string"
-                    }
-                  }
+                  "$ref": "#/components/schemas/ErrorResponse"
                 },
                 "example": {
                   "code": 102,
@@ -3094,15 +3040,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "code": {
-                      "type": "integer"
-                    },
-                    "message": {
-                      "type": "string"
-                    }
-                  }
+                  "$ref": "#/components/schemas/ErrorResponse"
                 },
                 "example": {
                   "code": 10000,
@@ -3179,15 +3117,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "code": {
-                      "type": "integer"
-                    },
-                    "message": {
-                      "type": "string"
-                    }
-                  }
+                  "$ref": "#/components/schemas/ErrorResponse"
                 },
                 "example": {
                   "code": 101,
@@ -3354,15 +3284,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "code": {
-                      "type": "integer"
-                    },
-                    "message": {
-                      "type": "string"
-                    }
-                  }
+                  "$ref": "#/components/schemas/ErrorResponse"
                 },
                 "example": {
                   "code": 101,
@@ -3435,18 +3357,10 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "code": {
-                      "type": "string"
-                    },
-                    "message": {
-                      "type": "string"
-                    }
-                  }
+                  "$ref": "#/components/schemas/ErrorResponse"
                 },
                 "example": {
-                  "code": "1003",
+                  "code": 1003,
                   "message": "Calendar not found"
                 }
               }
@@ -3499,15 +3413,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "code": {
-                      "type": "integer"
-                    },
-                    "message": {
-                      "type": "string"
-                    }
-                  }
+                  "$ref": "#/components/schemas/ErrorResponse"
                 },
                 "example": {
                   "code": 102,
@@ -3642,15 +3548,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "code": {
-                      "type": "integer"
-                    },
-                    "message": {
-                      "type": "string"
-                    }
-                  }
+                  "$ref": "#/components/schemas/ErrorResponse"
                 },
                 "example": {
                   "code": 101,
@@ -3791,18 +3689,10 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "code": {
-                      "type": "string"
-                    },
-                    "message": {
-                      "type": "string"
-                    }
-                  }
+                  "$ref": "#/components/schemas/ErrorResponse"
                 },
                 "example": {
-                  "code": "100",
+                  "code": 100,
                   "message": "Missing or invalid parameter: permissions"
                 }
               }
@@ -3917,15 +3807,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "code": {
-                      "type": "integer"
-                    },
-                    "message": {
-                      "type": "string"
-                    }
-                  }
+                  "$ref": "#/components/schemas/ErrorResponse"
                 },
                 "example": {
                   "code": 101,
@@ -4005,15 +3887,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "code": {
-                      "type": "integer"
-                    },
-                    "message": {
-                      "type": "string"
-                    }
-                  }
+                  "$ref": "#/components/schemas/ErrorResponse"
                 },
                 "example": {
                   "code": 100,
@@ -4123,15 +3997,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "code": {
-                      "type": "integer"
-                    },
-                    "message": {
-                      "type": "string"
-                    }
-                  }
+                  "$ref": "#/components/schemas/ErrorResponse"
                 },
                 "example": {
                   "code": 101,
@@ -4190,15 +4056,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "code": {
-                      "type": "integer"
-                    },
-                    "message": {
-                      "type": "string"
-                    }
-                  }
+                  "$ref": "#/components/schemas/ErrorResponse"
                 },
                 "example": {
                   "code": 101,
@@ -4255,15 +4113,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "code": {
-                      "type": "integer"
-                    },
-                    "message": {
-                      "type": "string"
-                    }
-                  }
+                  "$ref": "#/components/schemas/ErrorResponse"
                 },
                 "example": {
                   "code": 101,
@@ -4688,15 +4538,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "code": {
-                      "type": "integer"
-                    },
-                    "message": {
-                      "type": "string"
-                    }
-                  }
+                  "$ref": "#/components/schemas/ErrorResponse"
                 },
                 "example": {
                   "code": 102,
@@ -4782,15 +4624,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "code": {
-                      "type": "integer"
-                    },
-                    "message": {
-                      "type": "string"
-                    }
-                  }
+                  "$ref": "#/components/schemas/ErrorResponse"
                 },
                 "example": {
                   "code": 101,
@@ -4909,15 +4743,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "code": {
-                      "type": "integer"
-                    },
-                    "message": {
-                      "type": "string"
-                    }
-                  }
+                  "$ref": "#/components/schemas/ErrorResponse"
                 },
                 "example": {
                   "code": 100,
@@ -5077,18 +4903,20 @@
               "type": "object",
               "properties": {
                 "field": {
-                  "type": "string"
+                  "type": "string",
+                  "description": "Field to sort by. Allowed: name : with case-insensitive. Default: name.\n\nUsage: `?orderBy[field]=name&orderBy[direction]=Asc`"
                 },
                 "direction": {
                   "type": "string",
                   "enum": [
                     "Asc",
                     "Desc"
-                  ]
+                  ],
+                  "description": "Default: Asc."
                 }
               }
             },
-            "description": "Sort order. Usage: `?orderBy[field]=symbol&orderBy[direction]=Desc`\n\nIf not sent, defaults to [symbol, Asc]",
+            "description": "Usage: `?orderBy[field]=name&orderBy[direction]=Asc`\n\nAllowed values for field:\n- name : with case-insensitive\nIf nothing was sent the default is [name, Asc]",
             "style": "deepObject",
             "explode": true
           }
@@ -5191,15 +5019,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "code": {
-                      "type": "integer"
-                    },
-                    "message": {
-                      "type": "string"
-                    }
-                  }
+                  "$ref": "#/components/schemas/ErrorResponse"
                 },
                 "example": {
                   "code": 101,
@@ -5276,15 +5096,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "code": {
-                      "type": "integer"
-                    },
-                    "message": {
-                      "type": "string"
-                    }
-                  }
+                  "$ref": "#/components/schemas/ErrorResponse"
                 },
                 "example": {
                   "code": 101,
@@ -5346,15 +5158,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "code": {
-                      "type": "integer"
-                    },
-                    "message": {
-                      "type": "string"
-                    }
-                  }
+                  "$ref": "#/components/schemas/ErrorResponse"
                 },
                 "example": {
                   "code": 100,
@@ -5459,15 +5263,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "code": {
-                      "type": "integer"
-                    },
-                    "message": {
-                      "type": "string"
-                    }
-                  }
+                  "$ref": "#/components/schemas/ErrorResponse"
                 },
                 "example": {
                   "code": 10000,
@@ -5539,15 +5335,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "code": {
-                      "type": "integer"
-                    },
-                    "message": {
-                      "type": "string"
-                    }
-                  }
+                  "$ref": "#/components/schemas/ErrorResponse"
                 },
                 "example": {
                   "code": 100,
@@ -5637,18 +5425,10 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "code": {
-                      "type": "string"
-                    },
-                    "message": {
-                      "type": "string"
-                    }
-                  }
+                  "$ref": "#/components/schemas/ErrorResponse"
                 },
                 "example": {
-                  "code": "100",
+                  "code": 100,
                   "message": "Missing or invalid parameter: id"
                 }
               }
@@ -5707,15 +5487,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "code": {
-                      "type": "integer"
-                    },
-                    "message": {
-                      "type": "string"
-                    }
-                  }
+                  "$ref": "#/components/schemas/ErrorResponse"
                 },
                 "example": {
                   "code": 102,
@@ -5827,15 +5599,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "code": {
-                      "type": "integer"
-                    },
-                    "message": {
-                      "type": "string"
-                    }
-                  }
+                  "$ref": "#/components/schemas/ErrorResponse"
                 },
                 "example": {
                   "code": 10000,
@@ -5907,15 +5671,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "code": {
-                      "type": "integer"
-                    },
-                    "message": {
-                      "type": "string"
-                    }
-                  }
+                  "$ref": "#/components/schemas/ErrorResponse"
                 },
                 "example": {
                   "code": 100,
@@ -6007,15 +5763,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "code": {
-                      "type": "integer"
-                    },
-                    "message": {
-                      "type": "string"
-                    }
-                  }
+                  "$ref": "#/components/schemas/ErrorResponse"
                 },
                 "example": {
                   "code": 100,
@@ -6076,15 +5824,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "code": {
-                      "type": "integer"
-                    },
-                    "message": {
-                      "type": "string"
-                    }
-                  }
+                  "$ref": "#/components/schemas/ErrorResponse"
                 },
                 "example": {
                   "code": 101,
@@ -6159,18 +5899,7 @@
                   "parties": {
                     "type": "array",
                     "items": {
-                      "type": "object",
-                      "properties": {
-                        "id": {
-                          "type": "string"
-                        },
-                        "source": {
-                          "type": "string"
-                        },
-                        "role": {
-                          "type": "string"
-                        }
-                      }
+                      "$ref": "#/components/schemas/Party"
                     },
                     "description": "Similar to the trading API"
                   },
@@ -6280,15 +6009,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "code": {
-                      "type": "integer"
-                    },
-                    "message": {
-                      "type": "string"
-                    }
-                  }
+                  "$ref": "#/components/schemas/ErrorResponse"
                 },
                 "example": {
                   "code": 101,
@@ -6397,15 +6118,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "code": {
-                      "type": "integer"
-                    },
-                    "message": {
-                      "type": "string"
-                    }
-                  }
+                  "$ref": "#/components/schemas/ErrorResponse"
                 },
                 "example": {
                   "code": 100,
@@ -6563,15 +6276,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "code": {
-                      "type": "integer"
-                    },
-                    "message": {
-                      "type": "string"
-                    }
-                  }
+                  "$ref": "#/components/schemas/ErrorResponse"
                 },
                 "example": {
                   "code": 2401,
@@ -6644,22 +6349,7 @@
                   "targetParties": {
                     "type": "array",
                     "items": {
-                      "type": "object",
-                      "properties": {
-                        "id": {
-                          "type": "string",
-                          "description": "TargetParty id"
-                        },
-                        "source": {
-                          "type": "string",
-                          "description": "TargetParty source"
-                        },
-                        "role": {
-                          "type": "string",
-                          "pattern": "^[0-9]+$",
-                          "description": "TargetParty role"
-                        }
-                      }
+                      "$ref": "#/components/schemas/Party"
                     },
                     "description": "targetParties to target the mass cancel orders\nIf multiple targetParty objects are in a request, the system cancels orders with all targetParties\nFor example:\nOrder1 has party1\nOrder2 has party1 and party2\nOrder3 has party1, party2 and party3\nOrder4 has no parties\nA mass cancel request with targetParties(party1 and party2) will cancel order 2 and 3\nNote: For accounts: id=accountId, source=P, role=24"
                   },
@@ -6734,15 +6424,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "code": {
-                      "type": "integer"
-                    },
-                    "message": {
-                      "type": "string"
-                    }
-                  }
+                  "$ref": "#/components/schemas/ErrorResponse"
                 },
                 "example": {
                   "code": 110,
@@ -6849,22 +6531,7 @@
                       "parties": {
                         "type": "array",
                         "items": {
-                          "type": "object",
-                          "properties": {
-                            "id": {
-                              "type": "string",
-                              "description": "The Id of the party"
-                            },
-                            "source": {
-                              "type": "string",
-                              "description": "Id source"
-                            },
-                            "role": {
-                              "type": "string",
-                              "pattern": "^[0-9]+$",
-                              "description": "Id role"
-                            }
-                          }
+                          "$ref": "#/components/schemas/Party"
                         },
                         "description": "list of parties obj"
                       }
@@ -6886,22 +6553,7 @@
                       "parties": {
                         "type": "array",
                         "items": {
-                          "type": "object",
-                          "properties": {
-                            "id": {
-                              "type": "string",
-                              "description": "The Id of the party"
-                            },
-                            "source": {
-                              "type": "string",
-                              "description": "Id source"
-                            },
-                            "role": {
-                              "type": "string",
-                              "pattern": "^[0-9]+$",
-                              "description": "Id role"
-                            }
-                          }
+                          "$ref": "#/components/schemas/Party"
                         },
                         "description": "list of parties obj"
                       }
@@ -6978,15 +6630,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "code": {
-                      "type": "integer"
-                    },
-                    "message": {
-                      "type": "string"
-                    }
-                  }
+                  "$ref": "#/components/schemas/ErrorResponse"
                 },
                 "example": {
                   "code": 105,
@@ -7067,15 +6711,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "code": {
-                      "type": "integer"
-                    },
-                    "message": {
-                      "type": "string"
-                    }
-                  }
+                  "$ref": "#/components/schemas/ErrorResponse"
                 },
                 "example": {
                   "code": 105,
@@ -7196,18 +6832,10 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "code": {
-                      "type": "string"
-                    },
-                    "message": {
-                      "type": "string"
-                    }
-                  }
+                  "$ref": "#/components/schemas/ErrorResponse"
                 },
                 "example": {
-                  "code": "100",
+                  "code": 100,
                   "message": "Missing or invalid parameter: amount"
                 }
               }
@@ -7300,18 +6928,10 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "code": {
-                      "type": "string"
-                    },
-                    "message": {
-                      "type": "string"
-                    }
-                  }
+                  "$ref": "#/components/schemas/ErrorResponse"
                 },
                 "example": {
-                  "code": "100",
+                  "code": 100,
                   "message": "Missing or invalid parameter: quantityRounding"
                 }
               }
@@ -7429,18 +7049,20 @@
               "type": "object",
               "properties": {
                 "field": {
-                  "type": "string"
+                  "type": "string",
+                  "description": "Field to sort by. Default: exDate.\n\nUsage: `?orderBy[field]=exDate&orderBy[direction]=Desc`"
                 },
                 "direction": {
                   "type": "string",
                   "enum": [
                     "Asc",
                     "Desc"
-                  ]
+                  ],
+                  "description": "Default: Desc."
                 }
               }
             },
-            "description": "Sort order. Usage: `?orderBy[field]=symbol&orderBy[direction]=Desc`\n\nIf not sent, defaults to [symbol, Asc]",
+            "description": "Usage: `?orderBy[field]=exDate&orderBy[direction]=Desc`\n\nIf nothing or invalid field was sent the default is [exDate, Desc]",
             "style": "deepObject",
             "explode": true
           },
@@ -7532,18 +7154,10 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "code": {
-                      "type": "string"
-                    },
-                    "message": {
-                      "type": "string"
-                    }
-                  }
+                  "$ref": "#/components/schemas/ErrorResponse"
                 },
                 "example": {
-                  "code": "101",
+                  "code": 101,
                   "message": "Instrument not found"
                 }
               }
@@ -7589,15 +7203,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "code": {
-                      "type": "integer"
-                    },
-                    "message": {
-                      "type": "string"
-                    }
-                  }
+                  "$ref": "#/components/schemas/ErrorResponse"
                 },
                 "example": {
                   "code": 100,
@@ -7662,15 +7268,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "code": {
-                      "type": "integer"
-                    },
-                    "message": {
-                      "type": "string"
-                    }
-                  }
+                  "$ref": "#/components/schemas/ErrorResponse"
                 },
                 "example": {
                   "code": 100,
@@ -7750,15 +7348,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "code": {
-                      "type": "integer"
-                    },
-                    "message": {
-                      "type": "string"
-                    }
-                  }
+                  "$ref": "#/components/schemas/ErrorResponse"
                 },
                 "example": {
                   "code": 101,
@@ -7846,15 +7436,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "code": {
-                      "type": "integer"
-                    },
-                    "message": {
-                      "type": "string"
-                    }
-                  }
+                  "$ref": "#/components/schemas/ErrorResponse"
                 },
                 "example": {
                   "code": 101,
@@ -7953,15 +7535,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "code": {
-                      "type": "integer"
-                    },
-                    "message": {
-                      "type": "string"
-                    }
-                  }
+                  "$ref": "#/components/schemas/ErrorResponse"
                 },
                 "example": {
                   "code": 101,
@@ -8101,15 +7675,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "code": {
-                      "type": "integer"
-                    },
-                    "message": {
-                      "type": "string"
-                    }
-                  }
+                  "$ref": "#/components/schemas/ErrorResponse"
                 },
                 "example": {
                   "code": 101,
