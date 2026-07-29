@@ -2,8 +2,8 @@
   "openapi": "3.0.3",
   "info": {
     "title": "Exberry Admin API",
-    "version": "1.59.10",
-    "description": "Exberry Admin API allows managing exchange static data (instruments, trading calendars and more) as well as sending operational commands (EOD, halt trading and more).\n\n**Sandbox environment endpoint:** `https://admin-api.uat.exberry-uat.io`\n\n**Guidelines:**\n- All numbers are stringified unless explicitly mentioned otherwise. Stringified integers are marked with pattern `^-?[0-9]+$`; stringified decimals with `format: decimal`.\n- Optional fields should be omitted from request if not required\n- System ignores any additional parameter that are sent on request body but was not specified in this document\n\n**HTTP Error Codes:**\n- 400: Maximum request size exceeded (60KB) or Invalid JSON\n- 401: Invalid token\n- 403: Authentication and authorization errors\n- 404: Route not found\n- 500: Any other error\n- 503: System not available\n- 504: Timeout",
+    "version": "1.59.13",
+    "description": "Exberry Admin API allows managing exchange static data (instruments, trading calendars and more) as well as sending operational commands (EOD, halt trading and more).\n\n**Sandbox environment endpoint:** `https://admin-api.uat.exberry-uat.io`\n\n**Guidelines:**\n- Numeric values are documented as stringified numbers: responses always return them as strings, and requests accept either a JSON number or its string form. Stringified integers carry pattern `^[0-9]+$`; stringified decimals carry `format: decimal` and pattern `^-?[0-9]+(\\.[0-9]+)?$`. The only numeric JSON field is the error body's `code`.\n- Optional fields should be omitted from request if not required\n- System ignores any additional parameter that are sent on request body but was not specified in this document\n\n**HTTP Error Codes:**\n- 400: Maximum request size exceeded (60KB) or Invalid JSON\n- 401: Invalid token\n- 403: Authentication and authorization errors\n- 404: Route not found\n- 500: Any other error\n- 503: System not available\n- 504: Timeout\n\n**Maker-Checker approval flow** (to activate, contact the operations team):\n\nThe maker-checker process is a workflow that requires the approval of at least two individuals to agree on an action. It involves two parties:\n\n- **Maker**: the person who initiates the action (can always see their own requests and reject them)\n- **Checker**: the person who approves the action (cannot approve their own request)\n\nWhen a user requests an action (like update or create an instrument), the change does not happen immediately - e.g. it won't be shown in the instrument list. The change takes place only after approval. A super user with the right permission can override this flow.\n\nFor any action that is part of the flow, the request can include a `comment` field (String) - the maker's explanation of what the action contains, giving the checker the change context.\n\nInstead of the regular response message, any API request involved in the flow returns a `MakerCheckerRequest` entity (see the model below). Its `data` property contains the data model of the requested action, identical to the API specification for that action without maker-checker activated.",
     "contact": {
       "name": "Exberry Support",
       "url": "https://exberry.io"
@@ -342,36 +342,50 @@
           "instrumentIds": {
             "type": "array",
             "items": {
-              "type": "integer"
+              "type": "string",
+              "pattern": "^[0-9]+$"
             },
             "description": "List of instrument ids to apply this rule\nIf empty - apply this rule for all instruments"
           },
           "instrumentGroupIds": {
             "type": "array",
             "items": {
-              "type": "integer"
+              "type": "string",
+              "pattern": "^[0-9]+$"
             },
             "description": "List of instrument group ids to apply this rule\nNote: Only one of instrumentIds and instrumentGroupIds is allowed"
           },
           "status": {
             "type": "string",
-            "description": "Available values:\n`(CHANGED v1.59.0)` ACTIVE Active - CBR is active\n`(CHANGED v1.59.0)` DISABLED Disabled - CBR is not active"
+            "enum": [
+              "Active",
+              "Disabled"
+            ],
+            "x-enumDescriptions": {
+              "Active": "CBR is active",
+              "Disabled": "CBR is not active"
+            },
+            "description": "Note: CHANGED v1.59.0\nfrom Upper case to Title case"
           },
           "type": {
             "type": "string",
             "enum": [
               "MARKET_RATE",
               "DYNAMIC_MARKET_RATE",
+              "MARKET_RATE_POTENTIAL_EXECUTION",
               "DYNAMIC_MARKET_RATE_POTENTIAL_EXECUTION"
             ],
             "x-enumDescriptions": {
               "MARKET_RATE": "monitor market rate changes since the previous day's close rate or daily settlement price if exists.",
-              "DYNAMIC_MARKET_RATE": "monitor market rate changes since the previous trade rate (last price) MARKET_RATE_POTENTIAL_EXECUTION - monitor potential executions that may impact market rate changes since the previous day's close rate or daily settlement price if exists.",
+              "DYNAMIC_MARKET_RATE": "monitor market rate changes since the previous trade rate (last price",
+              "MARKET_RATE_POTENTIAL_EXECUTION": "monitor potential executions that may impact market rate changes since the previous day's close rate or daily settlement price if exists.",
               "DYNAMIC_MARKET_RATE_POTENTIAL_EXECUTION": "monitor potential executions that may impact market rate changes since the previous trade rate (last price"
             }
           },
           "value": {
-            "type": "number",
+            "type": "string",
+            "format": "decimal",
+            "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
             "description": "The value in percent that considered breach (value > 1 means increase on rate and 0 < value < 1 means decline rate) Example:\n0.8 means decline of 20%\n1.2 means increase of 20%"
           },
           "actionType": {
@@ -388,11 +402,14 @@
             }
           },
           "actionValue": {
-            "type": "number",
+            "type": "string",
+            "format": "decimal",
+            "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
             "description": "For acton HALT_TRADING- Leave empty to halt trading indefinitely (manual resume required). Otherwise, specify the duration in minutes"
           },
           "priority": {
-            "type": "integer",
+            "type": "string",
+            "pattern": "^[0-9]+$",
             "description": "Rule priority - the highest is more important"
           },
           "rounding": {
@@ -559,14 +576,14 @@
             "description": "MIC code"
           },
           "startDate": {
-            "type": "integer",
-            "format": "int64",
+            "type": "string",
+            "pattern": "^[0-9]+$",
             "x-epoch-unit": "seconds",
             "description": "Mandatory if Category = O (option) OR F (Futures)\nUsed for derivatives, trading is allowed from this time\nBefore this time, marketStatus is in Closed state without changing as per the calendar. — Unix epoch time in seconds"
           },
           "stopDate": {
-            "type": "integer",
-            "format": "int64",
+            "type": "string",
+            "pattern": "^[0-9]+$",
             "x-epoch-unit": "seconds",
             "description": "Mandatory if Category = O (option) OR F (Futures)\nUsed for derivatives, trading is allowed up to this time\nAt this time all active orders are being cancelled\nSee tradingCutoffs for instrument expiration details\nAt this time marketStatus changes to Closed and remains in the same state without changing as per the calendar. — Unix epoch time in seconds"
           },
@@ -580,8 +597,8 @@
                   "description": "One of the below values:\nRefer Trade Entry/type field for the values; all values are supported"
                 },
                 "timestamp": {
-                  "type": "integer",
-                  "format": "int64",
+                  "type": "string",
+                  "pattern": "^[0-9]+$",
                   "x-epoch-unit": "seconds",
                   "description": "Cutoff time for trade reporting of the type defined in the ‘type’ field\nInstrument status changed to be Disabled at the latest cutoff. (considering also the stopDate)\nIf not defined, stopDate will be the cutoff time for trade types not defined\nApplicable to any Trade entry — Unix epoch time in seconds"
                 }
@@ -616,7 +633,9 @@
             "description": "Specifies the units that instrument is trading in"
           },
           "priceMultiplier": {
-            "type": "number",
+            "type": "string",
+            "format": "decimal",
+            "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
             "description": "The multiplier used to convert quoted per units to Settlement units\nFor example, GOLD 99.99% quoted in USD per oz. price multiplier is applicable to “per oz” part of the definition\nIf not set, treated as priceMultiplier = 1"
           },
           "priceUnit": {
@@ -649,35 +668,51 @@
             "description": "Mandatory if Category = O (option)\nOption exercise type"
           },
           "dailyMinPricePercentage": {
-            "type": "number",
+            "type": "string",
+            "format": "decimal",
+            "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
             "description": "Minimum allowed price % change from the last reference price for the instrument"
           },
           "dailyMaxPricePercentage": {
-            "type": "number",
+            "type": "string",
+            "format": "decimal",
+            "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
             "description": "Maximum allowed price % change from the last reference price for the instrument"
           },
           "dailyMinPriceAbsolute": {
-            "type": "number",
+            "type": "string",
+            "format": "decimal",
+            "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
             "description": "Minimum allowed absolute price change from the reference price for the instrument\nCannot be used together with `dailyMinPricePercentage`"
           },
           "dailyMaxPriceAbsolute": {
-            "type": "number",
+            "type": "string",
+            "format": "decimal",
+            "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
             "description": "Maximum allowed absolute price change from the reference price for the instrument\nCannot be used together with `dailyMaxPricePercentage`"
           },
           "tickMinPricePercentage": {
-            "type": "number",
+            "type": "string",
+            "format": "decimal",
+            "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
             "description": "Minimum allowed price % change from the last executed price for the instrument"
           },
           "tickMaxPricePercentage": {
-            "type": "number",
+            "type": "string",
+            "format": "decimal",
+            "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
             "description": "Maximum allowed price % change from the last executed price for the instrument"
           },
           "tickMinPriceAbsolute": {
-            "type": "number",
+            "type": "string",
+            "format": "decimal",
+            "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
             "description": "Minimum allowed absolute price change from the tick reference price\nCannot be used together with `tickMinPricePercentage`"
           },
           "tickMaxPriceAbsolute": {
-            "type": "number",
+            "type": "string",
+            "format": "decimal",
+            "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
             "description": "Maximum allowed absolute price change from the tick reference price\nCannot be used together with `tickMaxPricePercentage`"
           },
           "applicablePriceBands": {
@@ -705,7 +740,8 @@
             "description": "If not configured, all price bands apply for all trade types\nIf configured, only the specified price bands apply for specified trade types"
           },
           "underlyingInstrumentId": {
-            "type": "integer",
+            "type": "string",
+            "pattern": "^[0-9]+$",
             "description": "Applicable if Category = O (option) OR F (Futures) OR K (Strategies)\nUnderlying instrument id"
           },
           "strategyType": {
@@ -720,12 +756,15 @@
           "legsInstrumentsIds": {
             "type": "array",
             "items": {
-              "type": "integer"
+              "type": "string",
+              "pattern": "^[0-9]+$"
             },
             "description": "Mandatory if Category = K (Strategies)\nArray of instrument ids of that strategy - sorted so that leg1 is the first leg2 second etc\n- On spread: 2 legs are required\n- On strips: 2 ≤ number of legs < 24"
           },
           "leg1ReferencePrice": {
-            "type": "number",
+            "type": "string",
+            "format": "decimal",
+            "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
             "description": "Mandatory if Category = K (Strategies) AND strategyType=SPREAD. Optional if Category = K (Strategies) AND strategyType!=SPREAD\nLeg1 reference price"
           },
           "legPriceBands": {
@@ -743,19 +782,32 @@
           "bidAskTickRefPrice": {
             "type": "boolean",
             "default": false,
-            "description": "true: System considers best Bid/best Ask when calculating tickReferencePrice\n- false: best Bid/best Ask is not considered (default)"
+            "description": "- true: System considers best Bid/best Ask when calculating tickReferencePrice\n- false: best Bid/best Ask is not considered (default)"
           },
           "coupon": {
-            "type": "integer",
+            "type": "string",
+            "pattern": "^[0-9]+$",
             "description": "Only if Category = D(Dept instruments)\nThe coupon of the bonds"
           },
           "periodOfCoupon": {
             "type": "string",
-            "description": "Only if Category = D(Dept instruments)\nThe period of the coupon\noptional values:\nANNUAL\nSEMI_ANNUAL\nQUARTERLY"
+            "enum": [
+              "ANNUAL",
+              "SEMI_ANNUAL",
+              "QUARTERLY"
+            ],
+            "description": "Only if Category = D(Dept instruments)\nThe period of the coupon"
           },
           "accrualConvention": {
             "type": "string",
-            "description": "Only if Category = D(Dept instruments)\nThe Convention calculate accrual of the coupon\noptinal values:\nACT_ACT\nNO_ACCRUAL\nACT_360\n_30E_360\nACT_365"
+            "enum": [
+              "ACT_ACT",
+              "NO_ACCRUAL",
+              "ACT_360",
+              "_30E_360",
+              "ACT_365"
+            ],
+            "description": "Only if Category = D(Dept instruments)\nThe Convention calculate accrual of the coupon"
           },
           "maturityDate": {
             "type": "string",
@@ -794,14 +846,16 @@
                 "RFQ": "instrument supports Request For Quote"
               }
             },
-            "description": "Allowed values in the array"
+            "description": "Allowed values in the array\n\nIf the field doesn’t exist, the system treats as ‘CLOB’\nThe field is always included in the responses"
           },
           "maxRFQExpireTimePeriod": {
-            "type": "integer",
+            "type": "string",
+            "pattern": "^[0-9]+$",
             "description": "Required if tradingModels has ‘RFQ’\nMax allowed expiry time for an RFQ in seconds\nNote: this is the time to maintain RFQ without expiration due to timeout"
           },
           "allegedTradeExpireTimePeriod": {
-            "type": "integer",
+            "type": "string",
+            "pattern": "^[0-9]+$",
             "description": "`(CHANGED v1.51.0)`\nActive Alleged Trades are canceled by the system If configured, after allegedTradeExpireTimePeriod\nIf not configured, at EOD"
           },
           "minQuantityTradeEntries": {
@@ -814,7 +868,9 @@
                   "description": "trade entry type\nOne of the below values the:\nRefer Trade Entry/type field for the values; all values are supported"
                 },
                 "amount": {
-                  "type": "number",
+                  "type": "string",
+                  "format": "decimal",
+                  "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
                   "description": "Min amount for Trade Entry for the selected type"
                 }
               }
@@ -1130,7 +1186,8 @@
             "x-enumDescriptions": {
               "Active": "can trade.",
               "Blocked": "can't send any order RFQ, Quote and Alleged Trade command"
-            }
+            },
+            "description": "When MP is active, status field will not be included\n!Note: This action cancel all the resting orders active RFQs, Quotes and Alleged Trades of this mp"
           },
           "selfTradePrevention": {
             "type": "boolean",
@@ -1152,14 +1209,16 @@
               "lockedInMpIds": {
                 "type": "array",
                 "items": {
-                  "type": "integer"
+                  "type": "string",
+                  "pattern": "^[0-9]+$"
                 },
                 "description": "A list of mpIds the MP can designate as counterparty when creating locked-in trades reports\n[0] = All MPs (All = current and future MPs)"
               },
               "allegedMpIds": {
                 "type": "array",
                 "items": {
-                  "type": "integer"
+                  "type": "string",
+                  "pattern": "^[0-9]+$"
                 },
                 "description": "A list of mpIds the MP can designate as counterparty when creating alleged trades reports & alleged transfers\n[0] = All MPs (All = current and future MPs)"
               },
@@ -1168,7 +1227,8 @@
                 "items": {
                   "type": "array",
                   "items": {
-                    "type": "integer"
+                    "type": "string",
+                    "pattern": "^[0-9]+$"
                   },
                   "minItems": 2,
                   "maxItems": 2
@@ -1265,7 +1325,7 @@
           },
           "cancelOnDisconncet": {
             "type": "boolean",
-            "description": "true: when there is disconnection all resting orders, active Quotes and active Alleged Trades are canceled\nIf not sent default = false\nNote: The field can set to be true only when one of the below permission is included:\n- \"market-service:market:place_order\"\n- \"market-service:market:submit_rfq_quotes\"\n- \"market-service:market:create_trade_report\""
+            "description": "- true: when there is disconnection all resting orders, active Quotes and active Alleged Trades are canceled\nIf not sent default = false\nNote: The field can set to be true only when one of the below permission is included:\n- \"market-service:market:place_order\"\n- \"market-service:market:submit_rfq_quotes\"\n- \"market-service:market:create_trade_report\""
           },
           "allowedInstrumentGroupIds": {
             "type": "array",
@@ -1795,7 +1855,8 @@
             "in": "query",
             "required": false,
             "schema": {
-              "type": "integer"
+              "type": "string",
+              "pattern": "^[0-9]+$"
             },
             "description": "search by calendarId"
           },
@@ -1804,7 +1865,8 @@
             "in": "query",
             "required": false,
             "schema": {
-              "type": "integer"
+              "type": "string",
+              "pattern": "^[0-9]+$"
             },
             "description": "search by tickSizeTableId"
           },
@@ -1813,9 +1875,13 @@
             "in": "query",
             "required": false,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "enum": [
+                "CLOB",
+                "RFQ"
+              ]
             },
-            "description": "search by tradingModel\n- CLOB\n- RFQ"
+            "description": "search by tradingModel"
           },
           {
             "name": "startDateFrom",
@@ -1862,7 +1928,8 @@
             "in": "query",
             "required": false,
             "schema": {
-              "type": "integer"
+              "type": "string",
+              "pattern": "^[0-9]+$"
             },
             "description": "Search by underlyingInstrumentId for instruments without product - send 0"
           },
@@ -1922,16 +1989,22 @@
             "in": "query",
             "required": false,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "enum": [
+                "SPREAD",
+                "STRIP",
+                "STRIP2"
+              ]
             },
-            "description": "Search by strategy\n- SPREAD\n- STRIP"
+            "description": "Search by strategyType"
           },
           {
             "name": "offset",
             "in": "query",
             "required": false,
             "schema": {
-              "type": "integer"
+              "type": "string",
+              "pattern": "^[0-9]+$"
             },
             "description": "Which record to start send from\nIf nothing was sent default is 0 (=first record)"
           },
@@ -1940,7 +2013,8 @@
             "in": "query",
             "required": false,
             "schema": {
-              "type": "integer"
+              "type": "string",
+              "pattern": "^[0-9]+$"
             },
             "description": "How many records to include in each page\nIf nothing was sent default is 10,000"
           },
@@ -2148,7 +2222,7 @@
         "tags": [
           "Instruments"
         ],
-        "description": "This API allows to update existing instrument.\n\n#### Update Instrument- Error Codes\n\nAll validations in create instrument and the below\n\n| Code | Message |\n| --- | --- |\n| 100 | Missing or invalid parameter: \\[FieldName\\] |\n| 101 | \\[FieldName\\] not found |\n| 101 | \\[Start Date/~~Stop Date~~ Removed v1.25 ~~/~~ Category\\] can’t be changed after start date |\n| 101 | Category can’t be changed for instrument that is underlying instrument |\n| 101 | \\[FieldName\\] can’t be changed for strategy related instrument |\n| 101 | \\[FieldName\\] can’t be changed after elapsed |\n| 105 | Mass cancellation must be done before disabling the instrument |\n| 2402 | Mass cancellation must be done before changing quantityPrecision |\n| 2402 | Mass cancellation must be done before changing pricePrecision |\n| 10001 | Permission denied |",
+        "description": "This API allows to update existing instrument.\n\n#### Update Instrument- Error Codes\n\nAll validations in create instrument and the below\n\n| Code | Message |\n| --- | --- |\n| 100 | Missing or invalid parameter: \\[FieldName\\] |\n| 101 | \\[FieldName\\] not found |\n| 101 | \\[Start Date/ Category\\] can’t be changed after start date |\n| 101 | Category can’t be changed for instrument that is underlying instrument |\n| 101 | \\[FieldName\\] can’t be changed for strategy related instrument |\n| 101 | \\[FieldName\\] can’t be changed after elapsed |\n| 105 | Mass cancellation must be done before disabling the instrument |\n| 2402 | Mass cancellation must be done before changing quantityPrecision |\n| 2402 | Mass cancellation must be done before changing pricePrecision |\n| 10001 | Permission denied |",
         "parameters": [
           {
             "name": "id",
@@ -2343,7 +2417,7 @@
                           "timestamp": "1820999860"
                         }
                       ],
-                      "maxRFQExpireTimePeriod": 6000,
+                      "maxRFQExpireTimePeriod": "6000",
                       "applicablePriceBands": [
                         {
                           "priceBand": "DAILY_MIN_MAX",
@@ -4895,7 +4969,8 @@
             "schema": {
               "type": "array",
               "items": {
-                "type": "integer"
+                "type": "string",
+                "pattern": "^[0-9]+$"
               }
             },
             "description": "List of accounts ids\n\nPass multiple values with bracket notation: `?ids[]=value1&ids[]=value2`",
@@ -4925,7 +5000,8 @@
             "in": "query",
             "required": false,
             "schema": {
-              "type": "integer"
+              "type": "string",
+              "pattern": "^[0-9]+$"
             },
             "description": "mpId"
           },
@@ -4957,7 +5033,8 @@
             "in": "query",
             "required": false,
             "schema": {
-              "type": "integer"
+              "type": "string",
+              "pattern": "^[0-9]+$"
             },
             "description": "ledgerAccountId"
           },
@@ -4966,7 +5043,8 @@
             "in": "query",
             "required": false,
             "schema": {
-              "type": "integer"
+              "type": "string",
+              "pattern": "^[0-9]+$"
             },
             "description": "positionAccountId"
           },
@@ -4975,7 +5053,8 @@
             "in": "query",
             "required": false,
             "schema": {
-              "type": "integer"
+              "type": "string",
+              "pattern": "^[0-9]+$"
             },
             "description": "Which record to start send from (if you want page 3 and there are 50 records per page offset should be 150)\nIf nothing was sent default is 0 (=first record)"
           },
@@ -4984,8 +5063,9 @@
             "in": "query",
             "required": false,
             "schema": {
-              "type": "integer",
-              "maximum": 10
+              "type": "string",
+              "pattern": "^([0-9]|10)$",
+              "x-max-value": 10
             },
             "description": "How many records to include in each page\nIf nothing was sent default is 10,000,000"
           },
@@ -5235,7 +5315,7 @@
         "tags": [
           "CBR"
         ],
-        "description": "This API allows to create a new CBR.\n\nID will be returned in the response, this ID is the unique identifier of the CBR and should be used when sending update commands.\n\nNote: this ID can be retrieved via Get CBRs API.\n\n#### Create CBR - Error Codes\n\n| Code | Message |\n| --- | --- |\n| 1 | System is unavailable |\n| 100 | Missing or invalid parameter: \\[FieldName\\] |\n| `NEW v1.42.0`  <br>100 | Only one of instrumentIds and instrumentGroupIds is allowed |\n| 101 | \\[FieldName\\] not found |\n| 102 | name already exists |\n| `REMOVED v1.37`  <br>`NEW v1.35.0` ~~104~~ | ~~The calendar was copied successfully with the auctions from original calendar~~ |\n| `NEW v1.35.0` 104 | only Resume Auction is allowed for this CBR type |\n| `NEW v1.35.0` 104 | AutoResume auction needs to be configured with override reference price |\n| 105 | Priority \\[value\\] already exists |\n| `NEW v1.58.0` 2001 | You can send up to 750 instruments per request |\n| 10001 | Permission denied |",
+        "description": "This API allows to create a new CBR.\n\nID will be returned in the response, this ID is the unique identifier of the CBR and should be used when sending update commands.\n\nNote: this ID can be retrieved via Get CBRs API.\n\n#### Create CBR - Error Codes\n\n| Code | Message |\n| --- | --- |\n| 1 | System is unavailable |\n| 100 | Missing or invalid parameter: \\[FieldName\\] |\n| 100 | Only one of instrumentIds and instrumentGroupIds is allowed |\n| 101 | \\[FieldName\\] not found |\n| 102 | name already exists |\n| 104 | only Resume Auction is allowed for this CBR type |\n| 104 | AutoResume auction needs to be configured with override reference price |\n| 105 | Priority \\[value\\] already exists |\n| `NEW v1.58.0` 2001 | You can send up to 750 instruments per request |\n| 10001 | Permission denied |",
         "parameters": [],
         "responses": {
           "200": {
@@ -5596,7 +5676,7 @@
         "tags": [
           "Tick Size"
         ],
-        "description": "This API allows to create a new TickSize.\n\nID will be returned in the response, this ID is the unique identifier of the TickSize and should be used when sending update commands.\n\nNote: this ID can be retrieved via Get TickSizes API.\n\n#### Create TickSize- Error Codes\n\n| Code | Message |\n| --- | --- |\n| 1 | System is unavailable |\n| 100 | Missing or invalid parameter: \\[FieldName\\] |\n| 101 `new` | Max number of ticksizes (items) is 25  <br>  <br>`(NEW v1.59.0)` Can’t change status to Disabled when \\[entity\\] with this Tick Size Table exist  <br>\\- entity: Instruments |\n| 102 | name already exists |\n| 10001 | Permission denied |",
+        "description": "This API allows to create a new TickSize.\n\nID will be returned in the response, this ID is the unique identifier of the TickSize and should be used when sending update commands.\n\nNote: this ID can be retrieved via Get TickSizes API.\n\n#### Create TickSize- Error Codes\n\n| Code | Message |\n| --- | --- |\n| 1 | System is unavailable |\n| 100 | Missing or invalid parameter: \\[FieldName\\] |\n| 101 | Max number of ticksizes (items) is 25  <br>  <br>`(NEW v1.59.0)` Can’t change status to Disabled when \\[entity\\] with this Tick Size Table exist  <br>\\- entity: Instruments |\n| 102 | name already exists |\n| 10001 | Permission denied |",
         "parameters": [],
         "responses": {
           "200": {
@@ -5786,7 +5866,7 @@
         "tags": [
           "Tick Size"
         ],
-        "description": "This API allows to update existing TickSize.\n\n#### Update TickSize - Error Codes\n\nAll validations in create TickSize and the below\n\n| Code | Message |\n| --- | --- |\n| 101 | \\[FieldName\\] not found |\n| 10001 | Permission denied |\n| 10004 | Wrong format |\n| 2605 | \\[FieldName\\] must be less than maxLong/10^ pricePrecision for \\[Instrument\\] |\n| 2603 | \\[fieldValue\\] is not allowed as price precision is \\[lowestinstrumentPricePrecision\\] for \\[Instrument\\]  <br> |",
+        "description": "This API allows to update existing TickSize.\n\n#### Update TickSize - Error Codes\n\nAll validations in create TickSize and the below\n\n| Code | Message |\n| --- | --- |\n| 101 | \\[FieldName\\] not found |\n| 10001 | Permission denied |\n| 10004 | Wrong format |\n| 2605 | \\[FieldName\\] must be less than maxLong/10^ pricePrecision for \\[Instrument\\] |\n| 2603 | \\[fieldValue\\] is not allowed as price precision is \\[lowestinstrumentPricePrecision\\] for \\[Instrument\\] |",
         "parameters": [
           {
             "name": "id",
@@ -6064,7 +6144,8 @@
                     "description": "Instrument id for the order"
                   },
                   "mpOrderId": {
-                    "type": "integer",
+                    "type": "string",
+                    "pattern": "^[0-9]+$",
                     "description": "Similar to the trading API"
                   },
                   "timeInForce": {
@@ -6160,7 +6241,7 @@
                 "quantity": "1.3",
                 "price": "100.33",
                 "instrumentId": "123",
-                "mpOrderId": 998,
+                "mpOrderId": "998",
                 "timeInForce": "GTC",
                 "accountType": "House",
                 "parties": [
@@ -6237,11 +6318,13 @@
                 "type": "object",
                 "properties": {
                   "instrumentId": {
-                    "type": "integer",
+                    "type": "string",
+                    "pattern": "^[0-9]+$",
                     "description": "Instrument id for the trade"
                   },
                   "orderId": {
-                    "type": "integer",
+                    "type": "string",
+                    "pattern": "^[0-9]+$",
                     "description": "the Id of the order we want to cancel"
                   },
                   "cancelReason": {
@@ -6463,13 +6546,14 @@
                       "type": "string"
                     },
                     "numberOfRfqs": {
-                      "type": "integer"
+                      "type": "string",
+                      "pattern": "^[0-9]+$"
                     }
                   }
                 },
                 "example": {
                   "numberOfOrders": "9",
-                  "numberOfRfqs": 7
+                  "numberOfRfqs": "7"
                 }
               }
             }
@@ -6571,7 +6655,8 @@
                           "description": "TargetParty source"
                         },
                         "role": {
-                          "type": "integer",
+                          "type": "string",
+                          "pattern": "^[0-9]+$",
                           "description": "TargetParty role"
                         }
                       }
@@ -6607,7 +6692,7 @@
                   {
                     "id": "53",
                     "source": "M",
-                    "role": 1001
+                    "role": "1001"
                   }
                 ]
               }
@@ -6687,7 +6772,8 @@
                 "type": "object",
                 "properties": {
                   "instrumentId": {
-                    "type": "integer",
+                    "type": "string",
+                    "pattern": "^[0-9]+$",
                     "description": "Instrument id for the trade"
                   },
                   "type": {
@@ -6737,18 +6823,23 @@
                     }
                   },
                   "price": {
-                    "type": "number",
+                    "type": "string",
+                    "format": "decimal",
+                    "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
                     "description": "Trade price"
                   },
                   "quantity": {
-                    "type": "number",
+                    "type": "string",
+                    "format": "decimal",
+                    "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
                     "description": "Trade quantity"
                   },
                   "buy": {
                     "type": "object",
                     "properties": {
                       "mpId": {
-                        "type": "integer",
+                        "type": "string",
+                        "pattern": "^[0-9]+$",
                         "description": "mpId"
                       },
                       "accountType": {
@@ -6769,7 +6860,8 @@
                               "description": "Id source"
                             },
                             "role": {
-                              "type": "integer",
+                              "type": "string",
+                              "pattern": "^[0-9]+$",
                               "description": "Id role"
                             }
                           }
@@ -6783,7 +6875,8 @@
                     "type": "object",
                     "properties": {
                       "mpId": {
-                        "type": "integer",
+                        "type": "string",
+                        "pattern": "^[0-9]+$",
                         "description": "mpId"
                       },
                       "accountType": {
@@ -6804,7 +6897,8 @@
                               "description": "Id source"
                             },
                             "role": {
-                              "type": "integer",
+                              "type": "string",
+                              "pattern": "^[0-9]+$",
                               "description": "Id role"
                             }
                           }
@@ -7011,15 +7105,19 @@
                 "type": "object",
                 "properties": {
                   "instrumentId": {
-                    "type": "integer",
+                    "type": "string",
+                    "pattern": "^[0-9]+$",
                     "description": "Instrument ID to cancel the orders"
                   },
                   "tradeId": {
-                    "type": "integer",
+                    "type": "string",
+                    "pattern": "^[0-9]+$",
                     "description": "Trade Id"
                   },
                   "newPrice": {
-                    "type": "number",
+                    "type": "string",
+                    "format": "decimal",
+                    "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
                     "description": "New price of the trade"
                   },
                   "excludedPriceBands": {
@@ -7352,9 +7450,10 @@
             "required": false,
             "schema": {
               "type": "string",
-              "pattern": "^[0-9]+$"
+              "pattern": "^([0-9]|10)$",
+              "x-max-value": 10
             },
-            "description": "How many records to include in each page\nIf nothing was sent default is `(CHANGED v1.59.0)` 25 10,000\nMax value = `(CHANGED v1.59.0)` 100 10,000"
+            "description": "`(CHANGED v1.59.0)`\nHow many records to include in each page\nIf nothing was sent default is 10,000,000"
           },
           {
             "name": "offset",
@@ -7528,7 +7627,7 @@
                 "$ref": "#/components/schemas/CandleAdjustment"
               },
               "example": {
-                "instrumentId": 22673,
+                "instrumentId": "22673",
                 "exDate": "2024-08-01",
                 "price": "1.234",
                 "quantity": "2.456"
@@ -7616,7 +7715,7 @@
                 ]
               },
               "example": {
-                "instrumentId": 22673,
+                "instrumentId": "22673",
                 "exDate": "2024-08-01"
               }
             }
@@ -7690,10 +7789,13 @@
                 "properties": {
                   "instrumentId": {
                     "type": "string",
+                    "pattern": "^[0-9]+$",
                     "description": "Instrument ID to set a Settlement Price"
                   },
                   "price": {
                     "type": "string",
+                    "format": "decimal",
+                    "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
                     "description": "The price to set"
                   },
                   "updateReferencePrice": {
@@ -7783,10 +7885,13 @@
                 "properties": {
                   "instrumentId": {
                     "type": "string",
+                    "pattern": "^[0-9]+$",
                     "description": "Instrument ID to set a Tick Reference Price"
                   },
                   "price": {
                     "type": "string",
+                    "format": "decimal",
+                    "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
                     "description": "Tick Reference Price to set"
                   }
                 },
@@ -7902,14 +8007,14 @@
                     "description": "List of instrument groups to halt"
                   },
                   "scheduleHaltTime": {
-                    "type": "integer",
-                    "format": "int64",
+                    "type": "string",
+                    "pattern": "^[0-9]+$",
                     "x-epoch-unit": "seconds",
                     "description": "When to halt the trading\nIf this is not sent, the halt will be immediate — Unix epoch time in seconds"
                   },
                   "scheduleResumeTime": {
-                    "type": "integer",
-                    "format": "int64",
+                    "type": "string",
+                    "pattern": "^[0-9]+$",
                     "x-epoch-unit": "seconds",
                     "description": "When to resume trading — Unix epoch time in seconds"
                   },
@@ -8117,7 +8222,8 @@
                 "type": "object",
                 "properties": {
                   "id": {
-                    "type": "integer",
+                    "type": "string",
+                    "pattern": "^[0-9]+$",
                     "description": "News id, uniqueness is not validated by the system; it is the client’s responsibility to maintain it"
                   },
                   "message": {
@@ -8131,7 +8237,7 @@
                 ]
               },
               "example": {
-                "id": 456,
+                "id": "456",
                 "message": "Sample message"
               }
             }

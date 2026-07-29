@@ -22,7 +22,7 @@ info:
     **Sandbox environment endpoint:** `https://admin-api.uat.exberry-uat.io`
 
     **Guidelines:**
-    - All numbers are stringified unless explicitly mentioned otherwise. Stringified integers are marked with pattern `^-?[0-9]+$`; stringified decimals with `format: decimal`.
+    - Numeric values are documented as stringified numbers: responses always return them as strings, and requests accept either a JSON number or its string form. Stringified integers carry pattern `^[0-9]+$`; stringified decimals carry `format: decimal` and pattern `^-?[0-9]+(\.[0-9]+)?$`. The only numeric JSON field is the error body's `code`.
     - Optional fields should be omitted from request if not required
     - System ignores any additional parameter that are sent on request body but was not specified in this document
 
@@ -34,6 +34,19 @@ info:
     - 500: Any other error
     - 503: System not available
     - 504: Timeout
+
+    **Maker-Checker approval flow** (to activate, contact the operations team):
+
+    The maker-checker process is a workflow that requires the approval of at least two individuals to agree on an action. It involves two parties:
+
+    - **Maker**: the person who initiates the action (can always see their own requests and reject them)
+    - **Checker**: the person who approves the action (cannot approve their own request)
+
+    When a user requests an action (like update or create an instrument), the change does not happen immediately - e.g. it won't be shown in the instrument list. The change takes place only after approval. A super user with the right permission can override this flow.
+
+    For any action that is part of the flow, the request can include a `comment` field (String) - the maker's explanation of what the action contains, giving the checker the change context.
+
+    Instead of the regular response message, any API request involved in the flow returns a `MakerCheckerRequest` entity (see the model below). Its `data` property contains the data model of the requested action, identical to the API specification for that action without maker-checker activated.
 tags:
   Authentication: |-
     Any Admin API access will be provided an email and password.
@@ -206,7 +219,7 @@ operations:
       | --- | --- |
       | 100 | Missing or invalid parameter: \[FieldName\] |
       | 101 | \[FieldName\] not found |
-      | 101 | \[Start Date/~~Stop Date~~ Removed v1.25 ~~/~~ Category\] can’t be changed after start date |
+      | 101 | \[Start Date/ Category\] can’t be changed after start date |
       | 101 | Category can’t be changed for instrument that is underlying instrument |
       | 101 | \[FieldName\] can’t be changed for strategy related instrument |
       | 101 | \[FieldName\] can’t be changed after elapsed |
@@ -380,37 +393,6 @@ operations:
       | 101 | \[FieldName\] not found |
       | 102 | EOD is not allowed |
       | 10001 | Permission denied |
-  Create_API_Key:
-    summary: Create API Key
-    description: |-
-      This API allows to create a new apiKey for a specific MP.
-      As a response system will generate pair of apiKey and secret key.
-
-      For your security, your API Secret will only be returned at the time it is created. If you lose it, you will need to delete your API key and set up a new one.
-
-      #### Error Codes
-
-      | Code | Message |
-      | --- | --- |
-      | 1 | System is unavailable |
-      | 100 | Missing or invalid parameter: \[FieldName\] |
-      | 101 | \[FieldName\] not found |
-      | 102 | label already exists |
-  Get_API_Keys:
-    summary: Get API Keys
-    description: This API allows to get a list of all apiKeys with their details for specific MP.
-  Update_API_Key:
-    summary: Update API Key
-    description: |-
-      This API allows to update an existing apiKey for a specific MP.
-
-      `secret` is being generated when apiKey is created and can never be changed.
-  Get_API_Key:
-    summary: Get API Key
-    description: This API allows to get a single apiKey details.
-  Delete_API_Key:
-    summary: Delete API Key
-    description: This API allows to delete existing apiKey.
   Create_MP:
     summary: Create MP
     description: |-
@@ -446,21 +428,37 @@ operations:
   Get_MP:
     summary: Get MP
     description: This API allows to get a single MP details.
-  MP_Groups_Create_API_Key:
+  Create_API_Key:
     summary: Create API Key
-    description: Same error codes as for MP apiKeycreation
-  MP_Groups_Get_API_Keys:
+    description: |-
+      This API allows to create a new apiKey for a specific MP.
+      As a response system will generate pair of apiKey and secret key.
+
+      For your security, your API Secret will only be returned at the time it is created. If you lose it, you will need to delete your API key and set up a new one.
+
+      #### Error Codes
+
+      | Code | Message |
+      | --- | --- |
+      | 1 | System is unavailable |
+      | 100 | Missing or invalid parameter: \[FieldName\] |
+      | 101 | \[FieldName\] not found |
+      | 102 | label already exists |
+  Get_API_Keys:
     summary: Get API Keys
-  MP_Groups_Update_API_Key:
+    description: This API allows to get a list of all apiKeys with their details for specific MP.
+  Update_API_Key:
     summary: Update API Key
     description: |-
-      This API allows to update an existing apiKey for a specific MP Group.
+      This API allows to update an existing apiKey for a specific MP.
 
       `secret` is being generated when apiKey is created and can never be changed.
-  MP_Groups_Delete_API_Key:
-    summary: Delete API Key
-  MP_Groups_Get_API_Key:
+  Get_API_Key:
     summary: Get API Key
+    description: This API allows to get a single apiKey details.
+  Delete_API_Key:
+    summary: Delete API Key
+    description: This API allows to delete existing apiKey.
   Create_MP_Group:
     summary: Create MP Group
     description: |-
@@ -487,6 +485,21 @@ operations:
       | 101 | \[FieldName\] not found |
   Get_MP_Group:
     summary: Get MP Group
+  MP_Groups_Create_API_Key:
+    summary: Create API Key
+    description: Same error codes as for MP apiKeycreation
+  MP_Groups_Get_API_Keys:
+    summary: Get API Keys
+  MP_Groups_Update_API_Key:
+    summary: Update API Key
+    description: |-
+      This API allows to update an existing apiKey for a specific MP Group.
+
+      `secret` is being generated when apiKey is created and can never be changed.
+  MP_Groups_Delete_API_Key:
+    summary: Delete API Key
+  MP_Groups_Get_API_Key:
+    summary: Get API Key
   Create_Account:
     summary: Create Account
     description: |-
@@ -557,12 +570,11 @@ operations:
       | --- | --- |
       | 1 | System is unavailable |
       | 100 | Missing or invalid parameter: \[FieldName\] |
-      | `NEW v1.42.0`  <br>100 | Only one of instrumentIds and instrumentGroupIds is allowed |
+      | 100 | Only one of instrumentIds and instrumentGroupIds is allowed |
       | 101 | \[FieldName\] not found |
       | 102 | name already exists |
-      | `REMOVED v1.37`  <br>`NEW v1.35.0` ~~104~~ | ~~The calendar was copied successfully with the auctions from original calendar~~ |
-      | `NEW v1.35.0` 104 | only Resume Auction is allowed for this CBR type |
-      | `NEW v1.35.0` 104 | AutoResume auction needs to be configured with override reference price |
+      | 104 | only Resume Auction is allowed for this CBR type |
+      | 104 | AutoResume auction needs to be configured with override reference price |
       | 105 | Priority \[value\] already exists |
       | `NEW v1.58.0` 2001 | You can send up to 750 instruments per request |
       | 10001 | Permission denied |
@@ -600,7 +612,7 @@ operations:
       | --- | --- |
       | 1 | System is unavailable |
       | 100 | Missing or invalid parameter: \[FieldName\] |
-      | 101 `new` | Max number of ticksizes (items) is 25  <br>  <br>`(NEW v1.59.0)` Can’t change status to Disabled when \[entity\] with this Tick Size Table exist  <br>\- entity: Instruments |
+      | 101 | Max number of ticksizes (items) is 25  <br>  <br>`(NEW v1.59.0)` Can’t change status to Disabled when \[entity\] with this Tick Size Table exist  <br>\- entity: Instruments |
       | 102 | name already exists |
       | 10001 | Permission denied |
   Get_TickSizes:
@@ -621,7 +633,7 @@ operations:
       | 10001 | Permission denied |
       | 10004 | Wrong format |
       | 2605 | \[FieldName\] must be less than maxLong/10^ pricePrecision for \[Instrument\] |
-      | 2603 | \[fieldValue\] is not allowed as price precision is \[lowestinstrumentPricePrecision\] for \[Instrument\]  <br> |
+      | 2603 | \[fieldValue\] is not allowed as price precision is \[lowestinstrumentPricePrecision\] for \[Instrument\] |
   Get_TickSize:
     summary: Get TickSize
     description: This API allows to get a single TickSize details.
