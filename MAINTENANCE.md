@@ -54,8 +54,10 @@ every operationId and tag).
 
 **New field on a model:** add under the component's `properties`; if mandatory, add to
 `required`. Enums get `enum` + `x-enumDescriptions`. Stringified numbers get the standard
-pattern (`^-?[0-9]+$` int, `format: decimal` + pattern for decimals). Epoch times get
-`x-epoch-unit` + a "Unix epoch time in ..." note in the description.
+pattern (`^-?[0-9]+$` int, `format: decimal` + pattern for decimals). Free-text fields get
+the ASCII pattern — `^ *[!-~][ -~]*$` if mandatory, `^( *[!-~][ -~]*)?$` if optional
+(DECISIONS #28). Epoch times get `x-epoch-unit` + a "Unix epoch time in ..." note in the
+description.
 
 **New enum value:** append to `enum` AND `x-enumDescriptions` (and to the description
 bullets where present — e.g. `permissions`).

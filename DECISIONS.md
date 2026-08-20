@@ -270,6 +270,27 @@ Two rules learned the hard way on the `orderBy` parameter:
   everything else verbatim, deriving samples from each endpoint's own documented default.
   This is #16's principle applied to generated text rather than source text.
 
+## 28. Text canon: a shared printable-ASCII pattern, strictness follows required-ness
+**Decision:** every free-text field carries the same character rule — ASCII 32-126 only,
+a spaces-only value rejected — in two variants: mandatory fields (those in `required`) get
+`^ *[!-~][ -~]*$`, optional fields and query parameters get `^( *[!-~][ -~]*)?$`, which also
+accepts an empty value. The rule is explained once in the API guidelines, not repeated in
+23 property descriptions (#24's precedent).
+**Why two variants:** the backend rejects `""` on mandatory fields but accepts it on optional
+ones, and a pattern stricter than the backend makes validators and generated SDKs reject
+requests the API actually accepts — the #7 principle applied to patterns. Erring loose is the
+cheap direction; erring strict breaks clients.
+**Why no lookahead:** `^(?! *$)...` is shorter but unsupported in RE2 (Go) and some codegen
+validators. The `[!-~]`-anchored form is portable across ECMA, Java and RE2.
+**Why not a component:** `maxLength` and description differ per field, so an `AsciiText`
+schema would carry only the pattern — reuse without a definition that is equally true
+everywhere (#26), and the numeric patterns already set the inline precedent (#4).
+**Consequence:** adding a free-text field means picking the variant by its `required` status;
+moving a field into or out of `required` means switching its pattern too.
+**Known looseness:** `MarketParticipant.compIds[]` and `MpGroup.compId` are loose because
+neither is in a `required` list, though an empty FIX CompID is probably rejected by the
+backend. Tighten if confirmed.
+
 ## Operational lessons (keep honoring)
 - Every `open()` in tooling: `encoding='utf-8'` (Windows cp1252 default bit us); `ensure_ascii=False` on output.
 - GitHub Pages: after a failed deploy, trigger a **fresh run** — never "Re-run all jobs" (duplicate-artifact error).

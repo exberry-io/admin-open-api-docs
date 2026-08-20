@@ -2,8 +2,8 @@
   "openapi": "3.0.3",
   "info": {
     "title": "Exberry Admin API",
-    "version": "1.59.21",
-    "description": "New2 Exberry Admin API allows managing exchange static data (instruments, trading calendars and more) as well as sending operational commands (EOD, halt trading and more).\n\n**Sandbox environment endpoint:** `https://admin-api.uat.exberry-uat.io`\n\n**Guidelines:**\n- Numeric values are documented as stringified numbers: responses always return them as strings, and requests accept either a JSON number or its string form. Stringified integers carry pattern `^[0-9]+$`; stringified decimals carry `format: decimal` and pattern `^-?[0-9]+(\\.[0-9]+)?$`. The only numeric JSON field is the error body's `code`.\n- Optional fields should be omitted from request if not required\n- System ignores any additional parameter that are sent on request body but was not specified in this document\n\n**HTTP Error Codes:**\n- 400: Maximum request size exceeded (60KB) or Invalid JSON\n- 401: Invalid token\n- 403: Authentication and authorization errors\n- 404: Route not found\n- 500: Any other error\n- 503: System not available\n- 504: Timeout\n\n**Maker-Checker approval flow** (to activate, contact the operations team):\n\nThe maker-checker process is a workflow that requires the approval of at least two individuals to agree on an action. It involves two parties:\n\n- **Maker**: the person who initiates the action (can always see their own requests and reject them)\n- **Checker**: the person who approves the action (cannot approve their own request)\n\nWhen a user requests an action (like update or create an instrument), the change does not happen immediately - e.g. it won't be shown in the instrument list. The change takes place only after approval. A super user with the right permission can override this flow.\n\nFor any action that is part of the flow, the request can include a `comment` field (String) - the maker's explanation of what the action contains, giving the checker the change context.\n\nInstead of the regular response message, any API request involved in the flow returns a `MakerCheckerRequest` entity (see the model below). Its `data` property contains the data model of the requested action, identical to the API specification for that action without maker-checker activated.",
+    "version": "1.60.0",
+    "description": "Exberry Admin API allows managing exchange static data (instruments, trading calendars and more) as well as sending operational commands (EOD, halt trading and more).\n\n**Sandbox environment endpoint:** `https://admin-api.uat.exberry-uat.io`\n\n**Guidelines:**\n- Numeric values are documented as stringified numbers: responses always return them as strings, and requests accept either a JSON number or its string form. Stringified integers carry pattern `^[0-9]+$`; stringified decimals carry `format: decimal` and pattern `^-?[0-9]+(\\.[0-9]+)?$`. The only numeric JSON field is the error body's `code`.\n- Optional fields should be omitted from request if not required\n- System ignores any additional parameter that are sent on request body but was not specified in this document\n- Free-text fields accept printable ASCII characters only (codes 32-126, from space to `~`) and reject a value made of spaces only. Mandatory fields carry pattern `^ *[!-~][ -~]*$`; optional fields carry `^( *[!-~][ -~]*)?$`, which also accepts an empty value.\n\n**HTTP Error Codes:**\n- 400: Maximum request size exceeded (60KB) or Invalid JSON\n- 401: Invalid token\n- 403: Authentication and authorization errors\n- 404: Route not found\n- 500: Any other error\n- 503: System not available\n- 504: Timeout\n\n**Maker-Checker approval flow** (to activate, contact the operations team):\n\nThe maker-checker process is a workflow that requires the approval of at least two individuals to agree on an action. It involves two parties:\n\n- **Maker**: the person who initiates the action (can always see their own requests and reject them)\n- **Checker**: the person who approves the action (cannot approve their own request)\n\nWhen a user requests an action (like update or create an instrument), the change does not happen immediately - e.g. it won't be shown in the instrument list. The change takes place only after approval. A super user with the right permission can override this flow.\n\nFor any action that is part of the flow, the request can include a `comment` field (String) - the maker's explanation of what the action contains, giving the checker the change context. Like every free-text field, it accepts printable ASCII characters only and cannot be blank.\n\nInstead of the regular response message, any API request involved in the flow returns a `MakerCheckerRequest` entity (see the model below). Its `data` property contains the data model of the requested action, identical to the API specification for that action without maker-checker activated.",
     "contact": {
       "name": "Exberry Support",
       "url": "https://exberry.io"
@@ -47,7 +47,7 @@
           "name": {
             "type": "string",
             "maxLength": 50,
-            "pattern": "^[ -~]*$",
+            "pattern": "^ *[!-~][ -~]*$",
             "description": "Account Name"
           },
           "mpId": {
@@ -57,6 +57,7 @@
           },
           "description": {
             "type": "string",
+            "pattern": "^( *[!-~][ -~]*)?$",
             "description": "Description"
           },
           "status": {
@@ -95,6 +96,7 @@
           },
           "name": {
             "type": "string",
+            "pattern": "^ *[!-~][ -~]*$",
             "description": "Unique Calendar name"
           },
           "timeZone": {
@@ -128,6 +130,7 @@
                 },
                 "name": {
                   "type": "string",
+                  "pattern": "^( *[!-~][ -~]*)?$",
                   "description": "Holiday name"
                 }
               },
@@ -337,6 +340,7 @@
           },
           "name": {
             "type": "string",
+            "pattern": "^ *[!-~][ -~]*$",
             "description": "Unique CBR name"
           },
           "instrumentIds": {
@@ -393,12 +397,14 @@
             "enum": [
               "HALT_TRADING",
               "NOTIFY_BACKOFFICE",
-              "RESUME_AUCTION"
+              "RESUME_AUCTION",
+              "CANCEL_INCOMING_ORDER"
             ],
             "x-enumDescriptions": {
               "HALT_TRADING": "halt the trading for the instrument",
               "NOTIFY_BACKOFFICE": "send notification to Admin users",
-              "RESUME_AUCTION": "will trigger the auto_resume_auction"
+              "RESUME_AUCTION": "will trigger the auto_resume_auction",
+              "CANCEL_INCOMING_ORDER": "cancels the incoming order that triggered the CBR (Supported only with MARKET_RATE_POTENTIAL_EXECUTION and DYNAMIC_MARKET_RATE_POTENTIAL_EXECUTION)"
             }
           },
           "actionValue": {
@@ -467,6 +473,7 @@
           },
           "quoteCurrency": {
             "type": "string",
+            "pattern": "^ *[!-~][ -~]*$",
             "description": "Quote currency"
           },
           "calendarId": {
@@ -630,6 +637,7 @@
           },
           "contractSizeUnit": {
             "type": "string",
+            "pattern": "^( *[!-~][ -~]*)?$",
             "description": "Specifies the units that instrument is trading in"
           },
           "priceMultiplier": {
@@ -640,6 +648,7 @@
           },
           "priceUnit": {
             "type": "string",
+            "pattern": "^( *[!-~][ -~]*)?$",
             "description": "Specifies the quoted unit of the instrument. For example, the price is quoted per Oz"
           },
           "expiryDate": {
@@ -831,6 +840,7 @@
           },
           "periodCode": {
             "type": "string",
+            "pattern": "^( *[!-~][ -~]*)?$",
             "description": "Applicable if Category = O (option) OR F (Futures) or K (Strategies)\nPeriod code"
           },
           "tradingModels": {
@@ -956,7 +966,7 @@
           "name": {
             "type": "string",
             "maxLength": 30,
-            "pattern": "^[ -~]*$",
+            "pattern": "^ *[!-~][ -~]*$",
             "description": "Name of the Group\nMay contain values that are not unique"
           },
           "parentGroupId": {
@@ -1117,6 +1127,7 @@
           },
           "makerComment": {
             "type": "string",
+            "pattern": "^( *[!-~][ -~]*)?$",
             "description": "The comment of the reuqest"
           },
           "makerUserId": {
@@ -1153,19 +1164,19 @@
           "name": {
             "type": "string",
             "maxLength": 30,
-            "pattern": "^[ -~]*$",
+            "pattern": "^ *[!-~][ -~]*$",
             "description": "Unique MP Name"
           },
           "longName": {
             "type": "string",
             "maxLength": 100,
-            "pattern": "^[ -~]*$",
+            "pattern": "^( *[!-~][ -~]*)?$",
             "description": "Long Name"
           },
           "description": {
             "type": "string",
             "maxLength": 100,
-            "pattern": "^[ -~]*$",
+            "pattern": "^( *[!-~][ -~]*)?$",
             "description": "Description"
           },
           "compIds": {
@@ -1173,7 +1184,7 @@
             "items": {
               "type": "string",
               "maxLength": 16,
-              "pattern": "^[ -~]*$"
+              "pattern": "^( *[!-~][ -~]*)?$"
             },
             "description": "Unique compId list to be configured on FIX connection for that MP"
           },
@@ -1248,6 +1259,7 @@
           "label": {
             "type": "string",
             "maxLength": 64,
+            "pattern": "^ *[!-~][ -~]*$",
             "description": "apiKey label"
           },
           "apiKey": {
@@ -1369,13 +1381,13 @@
           "name": {
             "type": "string",
             "maxLength": 50,
-            "pattern": "^[ -~]*$",
+            "pattern": "^ *[!-~][ -~]*$",
             "description": "Unique MP Group Name"
           },
           "compId": {
             "type": "string",
             "maxLength": 16,
-            "pattern": "^[ -~]*$",
+            "pattern": "^( *[!-~][ -~]*)?$",
             "description": "Unique compId to be configured on FIX connection for that MP Group"
           },
           "mpIds": {
@@ -1410,6 +1422,7 @@
           "label": {
             "type": "string",
             "maxLength": 64,
+            "pattern": "^ *[!-~][ -~]*$",
             "description": "apiKey label"
           },
           "apiKey": {
@@ -1504,6 +1517,7 @@
           "name": {
             "type": "string",
             "maxLength": 30,
+            "pattern": "^ *[!-~][ -~]*$",
             "description": "Unique TickSize name"
           },
           "status": {
@@ -1862,7 +1876,8 @@
             "in": "query",
             "required": false,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "pattern": "^( *[!-~][ -~]*)?$"
             },
             "description": "free text search by description\nSee the Suffix/Prefix table below"
           },
@@ -4808,7 +4823,8 @@
             "in": "query",
             "required": false,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "pattern": "^( *[!-~][ -~]*)?$"
             },
             "description": "free text search for all results by name\nSupports the prefix and suffix values below"
           },
@@ -4850,7 +4866,8 @@
             "in": "query",
             "required": false,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "pattern": "^( *[!-~][ -~]*)?$"
             },
             "description": "free text search for all results by description\nSupports the prefix and suffix values below"
           },
