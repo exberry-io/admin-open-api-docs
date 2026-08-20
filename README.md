@@ -23,8 +23,10 @@ PLAN.md · DECISIONS.md · MAINTENANCE.md
 
 ## Editing
 
-- **Wording / descriptions** → edit `spec/text-overrides.yaml`, run
-  `python3 spec/apply_text_overrides.py`, commit **both** files.
+- **Wording / descriptions** → edit `spec/text-overrides.yaml`, then run
+  `python3 -m venv .venv` (once), `.venv/bin/python -m pip install -r requirements.txt`
+  (when dependencies change), and `.venv/bin/python spec/apply_text_overrides.py`.
+  Commit **both** files.
 - **Structure** (endpoints, fields, enums) → edit `docs/openapi.json` via PR and bump
   `info.version`. Checklists in `MAINTENANCE.md`.
 
