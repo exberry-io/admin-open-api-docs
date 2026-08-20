@@ -7,19 +7,21 @@ The overlay is THE authoritative source for prose:
 - unknown overlay keys (typos, removed endpoints) are warnings
 - idempotent; property descriptions stay in the schema (schema_descriptions = targeted fixes)
 
-Usage:  py spec/apply_text_overrides.py        Requires: PyYAML
+Usage:  python3 spec/apply_text_overrides.py  Requires: PyYAML
 """
 import json, os, sys
-
-try:
-    import yaml
-except ImportError:
-    sys.exit("PyYAML is required:  py -m pip install pyyaml")
 
 BASE = os.path.dirname(os.path.abspath(__file__))
 SPEC_PATH = os.path.normpath(os.path.join(BASE, '..', 'docs', 'openapi.json'))
 OVERLAY_PATH = os.path.join(BASE, 'text-overrides.yaml')
 
+try:
+    import yaml
+except ImportError:
+    venv_python = os.path.join(BASE, '..', '.venv', 'bin', 'python')
+    if venv_python and os.path.isfile(venv_python) and os.access(venv_python, os.X_OK):
+        os.execv(venv_python, [venv_python, *sys.argv])
+    sys.exit("PyYAML is required:  python3 -m pip install pyyaml")
 
 def clean(text):
     if not isinstance(text, str):
