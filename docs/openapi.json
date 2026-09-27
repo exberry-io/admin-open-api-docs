@@ -111,6 +111,23 @@
             "pattern": "^\\d{2}:\\d{2}$",
             "description": "End trading hour, mandatory in case marketOpen is sent"
           },
+          "eodTime": {
+            "type": "string",
+            "pattern": "^\\d{2}:\\d{2}$",
+            "description": "`(NEW v1.61.0)`<br>The time that the system executes automatic EOD if Automatic EOD is configured, else it is ignored.\n\nFormat: `hh:mm` (24 hours)"
+          },
+          "tradeDate": {
+            "type": "string",
+            "format": "date",
+            "description": "`(NEW v1.61.0)`<br>Current Trade Date of the calendar.\n\nFormat: `yyyy-mm-dd`",
+            "readOnly": true
+          },
+          "lastEodDate": {
+            "type": "string",
+            "format": "date",
+            "description": "`(NEW v1.61.0)`<br>Last date where EOD was triggered.\n\nReturned only in case EOD was triggered for that calendar.\n\nFormat: `yyyy-mm-dd`",
+            "readOnly": true
+          },
           "holidays": {
             "type": "array",
             "items": {
@@ -2232,7 +2249,7 @@
         "tags": [
           "Instruments"
         ],
-        "description": "This API allows to update existing instrument.\n\n#### Update Instrument- Error Codes\n\nAll validations in create instrument and the below\n\n| Code | Message |\n| --- | --- |\n| 100 | Missing or invalid parameter: \\[FieldName\\] |\n| 101 | \\[FieldName\\] not found |\n| 101 | \\[Start Date/ Category\\] can’t be changed after start date |\n| 101 | Category can’t be changed for instrument that is underlying instrument |\n| 101 | \\[FieldName\\] can’t be changed for strategy related instrument |\n| 101 | \\[FieldName\\] can’t be changed after elapsed |\n| 105 | Mass cancellation must be done before disabling the instrument |\n| 2402 | Mass cancellation must be done before changing quantityPrecision |\n| 2402 | Mass cancellation must be done before changing pricePrecision |\n| 10001 | Permission denied |",
+        "description": "This API allows to update existing instrument.\n\n#### Update Instrument- Error Codes\n\nAll validations in create instrument and the below\n\n| Code | Message |\n| --- | --- |\n| 100 | Missing or invalid parameter: \\[FieldName\\] |\n| 101 | \\[FieldName\\] not found |\n| 101 | \\[Start Date/ Category\\] can’t be changed after start date |\n| 101 | Category can’t be changed for instrument that is underlying instrument |\n| 101 | \\[FieldName\\] can’t be changed for strategy related instrument |\n| 101 | \\[FieldName\\] can’t be changed after elapsed |\n| 101 | `(NEW v1.61.0)`<br>The trade dates of the new calendar and the existing calendar must be equal |\n| 105 | Mass cancellation must be done before disabling the instrument |\n| 2402 | Mass cancellation must be done before changing quantityPrecision |\n| 2402 | Mass cancellation must be done before changing pricePrecision |\n| 10001 | Permission denied |",
         "parameters": [
           {
             "name": "id",
@@ -2858,6 +2875,9 @@
                   "timeZone": "+00:00",
                   "marketOpen": "08:00",
                   "marketClose": "16:30",
+                  "eodTime": "00:00",
+                  "tradeDate": "2026-09-23",
+                  "lastEodDate": "2026-09-22",
                   "holidays": [
                     {
                       "date": "2022-01-01",
@@ -2917,6 +2937,7 @@
                 "timeZone": "+00:00",
                 "marketOpen": "08:00",
                 "marketClose": "16:30",
+                "eodTime": "00:00",
                 "holidays": [
                   {
                     "date": "2022-01-01",
@@ -2962,6 +2983,9 @@
                       "id": "8140",
                       "name": "23/7",
                       "timeZone": "+00:00",
+                      "eodTime": "00:00",
+                      "tradeDate": "2026-09-23",
+                      "lastEodDate": "2026-09-22",
                       "tradingDays": [
                         "MONDAY",
                         "TUESDAY"
@@ -2975,6 +2999,9 @@
                       "timeZone": "-05:00",
                       "marketOpen": "09:00",
                       "marketClose": "17:00",
+                      "eodTime": "00:00",
+                      "tradeDate": "2026-09-23",
+                      "lastEodDate": "2026-09-22",
                       "tradingDays": [
                         "MONDAY",
                         "TUESDAY"
@@ -3071,7 +3098,7 @@
         "tags": [
           "Calendars"
         ],
-        "description": "This API allows to update existing calendar.\n\n#### Update Calendar- Error Codes\n\nAll validations in create calendar and the below\n\n| Code | Message |\n| --- | --- |\n| 101 | \\[FieldName\\] not found |\n| 101 | AutoResume auction is required by \\[CBR.name\\] |\n| 10001 | Permission denied |\n| 10005 | Not found |\n| 20000 | Calendar Name already exists |\n| 20001 | Wrong format |\n| 20002 | Wrong format |",
+        "description": "This API allows to update existing calendar.\n\n#### Update Calendar- Error Codes\n\nAll validations in create calendar and the below\n\n| Code | Message |\n| --- | --- |\n| 101 | \\[FieldName\\] not found |\n| 101 | AutoResume auction is required by \\[CBR.name\\] |\n| 101 | `(NEW v1.61.0)`<br>Can’t change current tradeDate day from trading to non-trading |\n| 101 | `(NEW v1.61.0)`<br>Can’t change non-trading days till next trading day |\n| 10001 | Permission denied |\n| 10005 | Not found |\n| 20000 | Calendar Name already exists |\n| 20001 | Wrong format |\n| 20002 | Wrong format |",
         "parameters": [
           {
             "name": "id",
@@ -3101,6 +3128,9 @@
                   "timeZone": "+00:00",
                   "marketOpen": "08:00",
                   "marketClose": "16:30",
+                  "eodTime": "00:00",
+                  "tradeDate": "2026-09-23",
+                  "lastEodDate": "2026-09-22",
                   "holidays": [
                     {
                       "date": "2022-01-01",
@@ -3160,6 +3190,7 @@
                 "timeZone": "+00:00",
                 "marketOpen": "08:00",
                 "marketClose": "16:30",
+                "eodTime": "00:00",
                 "holidays": [
                   {
                     "date": "2022-01-01",
@@ -3211,6 +3242,9 @@
                       "timeZone": "-02:00",
                       "marketOpen": "09:00",
                       "marketClose": "17:00",
+                      "eodTime": "00:00",
+                      "tradeDate": "2026-09-23",
+                      "lastEodDate": "2026-09-22",
                       "holidays": [
                         {
                           "date": "2022-01-01",
@@ -3232,6 +3266,9 @@
                       "timeZone": "+03:00",
                       "marketOpen": "09:00",
                       "marketClose": "19:00",
+                      "eodTime": "00:00",
+                      "tradeDate": "2026-09-23",
+                      "lastEodDate": "2026-09-22",
                       "tradingDays": [
                         "MONDAY",
                         "TUESDAY"
@@ -3341,13 +3378,21 @@
                       "description": "Calendar ID (Not part of request body in Create/ Update Calendar)"
                     },
                     "lastEodDate": {
-                      "type": "string"
+                      "type": "string",
+                      "format": "date",
+                      "description": "Last date where EOD was triggered.\n\nFormat: `yyyy-mm-dd`"
+                    },
+                    "tradeDate": {
+                      "type": "string",
+                      "format": "date",
+                      "description": "`(NEW v1.61.0)`<br>The trade date of the next trading day.\n\nFormat: `yyyy-mm-dd`"
                     }
                   }
                 },
                 "example": {
                   "id": "2082487150",
-                  "lastEodDate": "2022-10-31"
+                  "lastEodDate": "2022-10-31",
+                  "tradeDate": "2022-11-01"
                 }
               }
             }

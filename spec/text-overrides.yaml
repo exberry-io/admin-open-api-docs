@@ -223,6 +223,7 @@ operations:
       | 101 | Category can’t be changed for instrument that is underlying instrument |
       | 101 | \[FieldName\] can’t be changed for strategy related instrument |
       | 101 | \[FieldName\] can’t be changed after elapsed |
+      | 101 | `(NEW v1.61.0)`<br>The trade dates of the new calendar and the existing calendar must be equal |
       | 105 | Mass cancellation must be done before disabling the instrument |
       | 2402 | Mass cancellation must be done before changing quantityPrecision |
       | 2402 | Mass cancellation must be done before changing pricePrecision |
@@ -372,6 +373,8 @@ operations:
       | --- | --- |
       | 101 | \[FieldName\] not found |
       | 101 | AutoResume auction is required by \[CBR.name\] |
+      | 101 | `(NEW v1.61.0)`<br>Can’t change current tradeDate day from trading to non-trading |
+      | 101 | `(NEW v1.61.0)`<br>Can’t change non-trading days till next trading day |
       | 10001 | Permission denied |
       | 10005 | Not found |
       | 20000 | Calendar Name already exists |
