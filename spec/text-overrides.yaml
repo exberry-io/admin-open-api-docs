@@ -28,7 +28,6 @@ info:
     - System ignores any additional parameter that are sent on request body but was not specified in this document
     - Free-text fields accept printable ASCII characters only (codes 32-126, from space to `~`) and reject a value made of spaces only. Mandatory fields carry pattern `^ *[!-~][ -~]*$`; optional fields carry `^( *[!-~][ -~]*)?$`, which also accepts an empty value.
 
-
     **HTTP Error Codes:**
     - 400: Maximum request size exceeded (60KB) or Invalid JSON
     - 401: Invalid token
@@ -47,7 +46,7 @@ info:
 
     When a user requests an action (like update or create an instrument), the change does not happen immediately - e.g. it won't be shown in the instrument list. The change takes place only after approval. A super user with the right permission can override this flow.
 
-    For any action that is part of the flow, the request can include a `comment` field (String) - the maker's explanation of what the action contains, giving the checker the change context.
+    For any action that is part of the flow, the request can include a `comment` field (String) - the maker's explanation of what the action contains, giving the checker the change context. Like every free-text field, it accepts printable ASCII characters only and cannot be blank.
 
     Instead of the regular response message, any API request involved in the flow returns a `MakerCheckerRequest` entity (see the model below). Its `data` property contains the data model of the requested action, identical to the API specification for that action without maker-checker activated.
 tags:
