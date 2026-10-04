@@ -121,13 +121,13 @@
           "tradeDate": {
             "type": "string",
             "format": "date",
-            "description": "Current Trade Date of the calendar.\n\nFormat: `yyyy-mm-dd`",
+            "description": "Current Trade Date of the calendar.\nFormat: `yyyy-mm-dd`",
             "readOnly": true
           },
           "lastEodDate": {
             "type": "string",
             "format": "date",
-            "description": "Last date where EOD was triggered.\n\nReturned only in case EOD was triggered for that calendar.\n\nFormat: `yyyy-mm-dd`",
+            "description": "Last date where EOD was triggered.Returned only in case EOD was triggered for that calendar.\nFormat: `yyyy-mm-dd`",
             "readOnly": true
           },
           "holidays": {
@@ -3394,12 +3394,12 @@
                     "lastEodDate": {
                       "type": "string",
                       "format": "date",
-                      "description": "Last date where EOD was triggered.\n\nFormat: `yyyy-mm-dd`"
+                      "description": "Last date where EOD was triggered.\nFormat: `yyyy-mm-dd`"
                     },
                     "tradeDate": {
                       "type": "string",
                       "format": "date",
-                      "description": "The trade date of the next trading day.\n\nFormat: `yyyy-mm-dd`"
+                      "description": "The trade date of the next trading day.\nFormat: `yyyy-mm-dd`"
                     }
                   }
                 },
