@@ -127,7 +127,7 @@
           "lastEodDate": {
             "type": "string",
             "format": "date",
-            "description": "Last date where EOD was triggered.Returned only in case EOD was triggered for that calendar.\nFormat: `yyyy-mm-dd`",
+            "description": "Last date where EOD was triggered.\nReturned only in case EOD was triggered for that calendar.\nFormat: `yyyy-mm-dd`",
             "readOnly": true
           },
           "holidays": {
