@@ -1,3 +1,4 @@
+# Version 1.61
 # Text overrides for docs/openapi.json — THE authoritative source for prose.
 # ---------------------------------------------------------------------------
 # Every tag and every operation MUST have an entry here (CI enforces this).
@@ -17,7 +18,7 @@
 # ---------------------------------------------------------------------------
 info:
   description: |-
-    New2 Exberry Admin API allows managing exchange static data (instruments, trading calendars and more) as well as sending operational commands (EOD, halt trading and more).
+    New Exberry Admin API allows managing exchange static data (instruments, trading calendars and more) as well as sending operational commands (EOD, halt trading and more).
 
     **Sandbox environment endpoint:** `https://admin-api.uat.exberry-uat.io`
 
@@ -223,7 +224,7 @@ operations:
       | 101 | Category can’t be changed for instrument that is underlying instrument |
       | 101 | \[FieldName\] can’t be changed for strategy related instrument |
       | 101 | \[FieldName\] can’t be changed after elapsed |
-      | 101 | `(NEW v1.61.0)`<br>The trade dates of the new calendar and the existing calendar must be equal |
+      | 101 | The trade dates of the new calendar and the existing calendar must be equal |
       | 105 | Mass cancellation must be done before disabling the instrument |
       | 2402 | Mass cancellation must be done before changing quantityPrecision |
       | 2402 | Mass cancellation must be done before changing pricePrecision |
@@ -310,7 +311,7 @@ operations:
 
       | Code | Message |
       | --- | --- |
-      | 101 | `(NEW v1.59.0)` Can’t change status to Disabled when \[entity\] with this Instrument Group exist  <br>entity:  <br>\- Instruments  <br>\- CBRs  <br>\- API Keys  <br>  <br>`(NEW v1.59.0)` Can’t change status to Disabled when Instrument Group is a parent group |
+      | 101 | Can’t change status to Disabled when \[entity\] with this Instrument Group exist  <br>entity:  <br>\- Instruments  <br>\- CBRs  <br>\- API Keys  <br>  Can’t change status to Disabled when Instrument Group is a parent group |
   Get_Instrument_Group:
     summary: Get Instrument Group
     description: This API allows to get a single instrument group details.
@@ -373,8 +374,8 @@ operations:
       | --- | --- |
       | 101 | \[FieldName\] not found |
       | 101 | AutoResume auction is required by \[CBR.name\] |
-      | 101 | `(NEW v1.61.0)`<br>Can’t change current tradeDate day from trading to non-trading |
-      | 101 | `(NEW v1.61.0)`<br>Can’t change non-trading days till next trading day |
+      | 101 | Can’t change current tradeDate day from trading to non-trading |
+      | 101 | Can’t change non-trading days till next trading day |
       | 10001 | Permission denied |
       | 10005 | Not found |
       | 20000 | Calendar Name already exists |
@@ -519,14 +520,14 @@ operations:
       | 1 | System is unavailable |
       | 100 | Missing or invalid parameter: \[FieldName\] |
       | 101 | \[FieldName\] not found  <br>  <br>Can’t Block the account when InProcess Transaction Requests exist |
-      | 102 | CHANGED 1.57.0  <br>~~\[FieldName\] already exists~~  <br>\[FieldName\] already exists for id: \[accountId\] |
+      | 102 | \[FieldName\] already exists for id: \[accountId\] |
       | 10001 | Permission denied |
   Get_Accounts:
     summary: Get Accounts
     description: |-
       This API allows to get a list of all accounts with their details.
 
-      #### (NEW v1.59.0) Prefix & Suffix
+      #### Prefix & Suffix
 
       | Pattern Type | Pattern |
       | --- | --- |
@@ -535,7 +536,7 @@ operations:
       | Ends with "X" | \*X |
       | Equal to 'X' | 'X' |
 
-      #### (NEW v1.59.0) Get Accounts - Error Codes
+      #### Get Accounts - Error Codes
 
       | Code | Message |
       | --- | --- |
@@ -579,7 +580,7 @@ operations:
       | 104 | only Resume Auction is allowed for this CBR type |
       | 104 | AutoResume auction needs to be configured with override reference price |
       | 105 | Priority \[value\] already exists |
-      | `NEW v1.58.0` 2001 | You can send up to 750 instruments per request |
+      | 2001 | You can send up to 750 instruments per request |
       | 10001 | Permission denied |
   Get_CBRs:
     summary: Get CBRs
@@ -615,7 +616,7 @@ operations:
       | --- | --- |
       | 1 | System is unavailable |
       | 100 | Missing or invalid parameter: \[FieldName\] |
-      | 101 | Max number of ticksizes (items) is 25  <br>  <br>`(NEW v1.59.0)` Can’t change status to Disabled when \[entity\] with this Tick Size Table exist  <br>\- entity: Instruments |
+      | 101 | Max number of ticksizes (items) is 25  <br> Can’t change status to Disabled when \[entity\] with this Tick Size Table exist  <br>\- entity: Instruments |
       | 102 | name already exists |
       | 10001 | Permission denied |
   Get_TickSizes:
@@ -739,12 +740,12 @@ operations:
       | 102 | Maximum trade quantity is \[MaxQuantity\] |
       | 102 | Quantity increment is \[quantityIncrement\] |
       | 102 | Instrument trading is halted |
-      | 102 | Price breaches \[FieldName\] of \[FieldValue\] (NEW v1.56.0) \[Optional Text\]  <br>  <br>_(NEW v1.56.0)  <br>_\[Optional Text\] = Price Band \[Value\]\[Type\], Reference Price: \[RefPrice\] , returned only in case of dynamic/ static price bands and not in case of leg price bands or instrument min/ max price bands |
+      | 102 | Price breaches \[FieldName\] of \[FieldValue\]  \[Optional Text\]  <br>   <br>_\[Optional Text\] = Price Band \[Value\]\[Type\], Reference Price: \[RefPrice\] , returned only in case of dynamic/ static price bands and not in case of leg price bands or instrument min/ max price bands |
       | 102 | Maximum value is \[maxOrderValue\] |
       | 102 | Price tick size is \[tickSize\] |
       | 102 | Trading is not allowed |
       | 102 | Missing position account |
-      | `(NEW v1.56.0)`  <br>113 | Not supported |
+      | 113 | Not supported |
       | 10001 | Permission denied |
   Trade_Cancellation:
     summary: Trade Cancellation
@@ -907,7 +908,7 @@ operations:
       - Multiple filtered instruments, see [here](https://documenter.getpostman.com/view/6229811/TzCV3jcq#c1b23770-4cc1-41b0-a035-15f3e280bbe4) for more details
 
 
-      #### Schedule Halt and Resume CHANGED 1.57.0
+      #### Schedule Halt and Resume 
 
       1. When the request sets a halt, it is allowed to specify halt at explicit time as well as the explicit resumption time. If not defind, action is immediate. When scheduling resume, a time gap extension instead of an explicit time can be defined.
 
@@ -974,7 +975,7 @@ operations:
   Set_News:
     summary: Set News
     description: |-
-      New v1.50.0
+      
 
       Set News API allows you to submit news to the system
 
