@@ -1,4 +1,4 @@
-# Version 1.61
+# Version 1.62
 # Text overrides for docs/openapi.json — THE authoritative source for prose.
 # ---------------------------------------------------------------------------
 # Every tag and every operation MUST have an entry here (CI enforces this).
