@@ -812,7 +812,7 @@
           "bidAskLegAllocationPrice": {
             "type": "boolean",
             "default": false,
-            "description": "Optional\n\nApplicable only if Category = K (Strategies)\n\n- true: System considers best Bid/best Ask when calculating strategy leg allocation prices\n- false: best Bid/best Ask is not considered in strategy leg allocation calculation (default)\n\nIf not sent, treated as false"
+            "description": "Applicable only if Category = K (Strategies)\n- true: System considers best Bid/best Ask when calculating legs allocation price\n- false: best Bid/best Ask is not considered (default)"
           },
           "coupon": {
             "type": "string",
