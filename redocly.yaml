@@ -1,0 +1,8 @@
+# Redocly CLI lint rules, used by CI (.github/workflows/deploy-docs.yml).
+# Run locally: npx @redocly/cli@1 lint docs/openapi.json
+extends:
+  - recommended
+rules:
+  # An example that doesn't match its schema fails the build
+  # (misspelled field, missing required field, value outside enum/pattern).
+  no-invalid-media-type-examples: error

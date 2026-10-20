@@ -54,10 +54,11 @@ every operationId and tag).
 
 **New field on a model:** add under the component's `properties`; if mandatory, add to
 `required`. Enums get `enum` + `x-enumDescriptions`. Stringified numbers get the standard
-pattern (`^-?[0-9]+$` int, `format: decimal` + pattern for decimals). Free-text fields get
+pattern (`^[0-9]+$` int, `format: decimal` + pattern for decimals). Free-text fields get
 the ASCII pattern — `^ *[!-~][ -~]*$` if mandatory, `^( *[!-~][ -~]*)?$` if optional
 (DECISIONS #28). Epoch times get `x-epoch-unit` + a "Unix epoch time in ..." note in the
-description.
+description. A value the server assumes when the field is not sent goes in `default`, not
+in the description (DECISIONS #30).
 
 **New enum value:** append to `enum` AND `x-enumDescriptions` (and to the description
 bullets where present — e.g. `permissions`).
@@ -65,7 +66,7 @@ bullets where present — e.g. `permissions`).
 **New Get Instruments filter:** also add it to the Trading Halt and Trading Resume request
 bodies — they accept the same filters, as body fields (no query-string syntax).
 
-**Review:** the PR's CI runs oasdiff against `main` — read its output as part of review.
+**Review:** CI runs oasdiff on every push to `main` (see the Action log) — read its output.
 Removed fields / changed types are breaking changes and must be intentional.
 
 ## Task 3 — Release notes
@@ -79,7 +80,8 @@ descriptions anymore.
 ## CI — what every push does
 
 1. **Overlay drift check** — re-applies `text-overrides.yaml`; fails if `openapi.json` differs
-2. **Validate** — a broken spec never deploys
+2. **Lint** (Redocly, rules in `redocly.yaml`) — a broken spec, or an example that doesn't
+   match its schema, never deploys
 3. **oasdiff vs previous** — changelog + breaking-change surfacing
 4. **Deploy** — GitHub Pages, live ~1 minute later (hard-refresh when checking)
 
@@ -90,6 +92,7 @@ descriptions anymore.
 | `Python was not found` | use `py` instead of `python3`, or install from python.org with "Add to PATH" |
 | CI fails on overlay drift | you edited YAML but didn't run the apply script, or edited a text directly in the JSON — run `py spec\apply_text_overrides.py`, commit both |
 | CI fails: "missing entries for: operation …" | a new endpoint/tag has no entry in `text-overrides.yaml` — add its summary/description there, apply, commit both |
+| CI fails: `no-invalid-media-type-examples` | an example doesn't match its schema (misspelled field, missing required field, value outside the enum/pattern) — fix the example or the schema; `npx @redocly/cli@1 lint docs/openapi.json` shows the same report locally |
 | Overlay warning: "not in spec" | the YAML has an entry for a removed/renamed operationId or tag — delete or fix the key |
 | Deploy fails: "Multiple artifacts" | never Re-run jobs; trigger a fresh run (Actions → Run workflow, or empty commit) |
 | Deploy fails: "Get Pages site failed" | Settings → Pages → Source = GitHub Actions |
@@ -111,5 +114,6 @@ descriptions anymore.
 | Text edits | `spec/text-overrides.yaml` + apply script |
 | Branding (colors/logo) | `docs/index.html`, BRAND TOKENS block |
 | CI definition | `.github/workflows/deploy-docs.yml` |
+| Lint rules | `redocly.yaml` |
 | Changelog | oasdiff output in each Action run |
 | Decisions & rationale | `DECISIONS.md` · Plan: `PLAN.md` |

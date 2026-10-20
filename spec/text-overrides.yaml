@@ -425,7 +425,7 @@ operations:
 
       #### Update MP- Error Codes
 
-      All validations in create instrument and the below
+      All validations in create MP and the below
 
       | Code | Message |
       | --- | --- |
@@ -478,23 +478,26 @@ operations:
       | 10001 | Permission denied |
   Get_MP_Groups:
     summary: Get MP Groups
+    description: Similar to [Get MPs](https://docs.exberry.io/admin-api/mps/get-mps), but for MP Groups (groups of MPs).
   Update_MP_Group:
     summary: Update MP Group
     description: |-
       #### Update MP Group- Error Codes
 
-      All validations in create instrument and the below
+      All validations in create MP Group and the below
 
       | Code | Message |
       | --- | --- |
       | 101 | \[FieldName\] not found |
   Get_MP_Group:
     summary: Get MP Group
+    description: Similar to [Get MP](https://docs.exberry.io/admin-api/mps/get-mp), but for an MP Group (group of MPs).
   MP_Groups_Create_API_Key:
     summary: Create API Key
-    description: Same error codes as for MP apiKeycreation
+    description: Same error codes as for MP apiKey creation
   MP_Groups_Get_API_Keys:
     summary: Get API Keys
+    description: Similar to [Get API Keys](https://docs.exberry.io/admin-api/mps/get-api-keys) of an MP, but for an MP Group (group of MPs).
   MP_Groups_Update_API_Key:
     summary: Update API Key
     description: |-
@@ -503,8 +506,10 @@ operations:
       `secret` is being generated when apiKey is created and can never be changed.
   MP_Groups_Delete_API_Key:
     summary: Delete API Key
+    description: Similar to [Delete API Key](https://docs.exberry.io/admin-api/mps/delete-api-key) of an MP, but for an MP Group (group of MPs).
   MP_Groups_Get_API_Key:
     summary: Get API Key
+    description: Similar to [Get API Key](https://docs.exberry.io/admin-api/mps/get-api-key) of an MP, but for an MP Group (group of MPs).
   Create_Account:
     summary: Create Account
     description: |-
@@ -651,7 +656,7 @@ operations:
 
       #### Place Order - Error Codes
 
-      1. Validations: same as [place order](https://docs.google.com/document/d/1N_7UEglP8s6hNV9ZeE5MN2NWdpJw-phRbo8Pk3qW2Go/edit#bookmark=id.gsv875ykqvln), with the below changes:
+      1. Validations: same as [place order](https://docs.exberry.io/ws/trading-api#placeorder), with the below changes:
 
           1. Skip validations 1007 & 1008 & 1011 (Authentication related)
 
@@ -688,7 +693,7 @@ operations:
 
       For more details about replace order - see [here](https://docs.exberry.io/ws/trading-api#replaceorder)
 
-      #### Relace Order - Error Codes
+      #### Replace Order - Error Codes
 
       1. Validations: same as [replaceOrder](https://docs.exberry.io/ws/trading-api#replaceorder), with the below changes:
 
@@ -911,7 +916,7 @@ operations:
 
       #### Schedule Halt and Resume 
 
-      1. When the request sets a halt, it is allowed to specify halt at explicit time as well as the explicit resumption time. If not defind, action is immediate. When scheduling resume, a time gap extension instead of an explicit time can be defined.
+      1. When the request sets a halt, it is allowed to specify halt at explicit time as well as the explicit resumption time. If not defined, action is immediate. When scheduling resume, a time gap extension instead of an explicit time can be defined.
 
       2. Examples:
 

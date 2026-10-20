@@ -304,6 +304,15 @@ which states the number-or-string flexibility once instead of per field.
 **Trade-off accepted:** strict validators and generated SDKs reject `null`; clients omit the
 field instead, as the guidelines recommend.
 
+## 30. Defaults live in the `default` keyword, not in descriptions
+**Decision:** a value the server assumes when a field is not sent ("If not exist, treated as
+Active", "default is 10,000") is expressed as `default` on the schema, and the sentence is
+removed from the description. Behaviour that is not a single value ("If not defined, applies
+to all trade types") stays in prose.
+**Why:** renderers show `default` as a consistent label on the field, and tools read it;
+the same fact in prose was phrased six different ways and easy to miss.
+**Values follow the schema:** stringified numbers take string defaults (`"0"`, `"10000"`).
+
 ## Operational lessons (keep honoring)
 - Every `open()` in tooling: `encoding='utf-8'` (Windows cp1252 default bit us); `ensure_ascii=False` on output.
 - GitHub Pages: after a failed deploy, trigger a **fresh run** — never "Re-run all jobs" (duplicate-artifact error).

@@ -38,8 +38,8 @@ jobs:
             exit 1
           }
 
-      - name: Validate OpenAPI spec
-        run: npx --yes @apidevtools/swagger-cli@4 validate docs/openapi.json
+      - name: Lint OpenAPI spec (rules in redocly.yaml)
+        run: npx --yes @redocly/cli@1 lint docs/openapi.json
 
       - name: Changelog / breaking changes vs previous commit
         if: github.event_name == 'push'
