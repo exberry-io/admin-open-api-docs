@@ -3,7 +3,7 @@
   "info": {
     "title": "Exberry Admin API",
     "version": "1.62.0",
-    "description": "Exberry Admin API allows managing exchange static data (instruments, trading calendars and more) as well as sending operational commands (EOD, halt trading and more).\n\n**Sandbox environment endpoint:** `https://admin-api.uat.exberry-uat.io`\n\n**Guidelines:**\n- Numeric values are documented as stringified numbers: responses always return them as strings, and requests accept either a JSON number or its string form. Stringified integers carry pattern `^[0-9]+$`; stringified decimals carry `format: decimal` and pattern `^-?[0-9]+(\\.[0-9]+)?$`. The only numeric JSON field is the error body's `code`.\n- Optional fields should be omitted from request if not required. Optional fields also accept `null`, which is treated the same as not sending the field\n- System ignores any additional parameter that are sent on request body but was not specified in this document\n- Free-text fields accept printable ASCII characters only (codes 32-126, from space to `~`) and reject a value made of spaces only. Mandatory fields carry pattern `^ *[!-~][ -~]*$`; optional fields carry `^( *[!-~][ -~]*)?$`, which also accepts an empty value.\n\n**HTTP Error Codes:**\n- 400: Maximum request size exceeded (60KB) or Invalid JSON\n- 401: Invalid token\n- 403: Authentication and authorization errors\n- 404: Route not found\n- 500: Any other error\n- 503: System not available\n- 504: Timeout\n\n**Maker-Checker approval flow** (to activate, contact the operations team):\n\nThe maker-checker process is a workflow that requires the approval of at least two individuals to agree on an action. It involves two parties:\n\n- **Maker**: the person who initiates the action (can always see their own requests and reject them)\n- **Checker**: the person who approves the action (cannot approve their own request)\n\nWhen a user requests an action (like update or create an instrument), the change does not happen immediately - e.g. it won't be shown in the instrument list. The change takes place only after approval. A super user with the right permission can override this flow.\n\nFor any action that is part of the flow, the request can include a `comment` field (String) - the maker's explanation of what the action contains, giving the checker the change context. Like every free-text field, it accepts printable ASCII characters only and cannot be blank.\n\nInstead of the regular response message, any API request involved in the flow returns a `MakerCheckerRequest` entity (see the model below). Its `data` property contains the data model of the requested action, identical to the API specification for that action without maker-checker activated.",
+    "description": "Exberry Admin API allows managing exchange static data (instruments, trading calendars and more) as well as sending operational commands (EOD, halt trading and more).\n\n**Sandbox environment endpoint:** `https://admin-api.uat.exberry-uat.io`\n\n**Guidelines:**\n- Numeric values are documented as stringified numbers: responses always return them as strings, and requests accept either a JSON number or its string form. Stringified integers carry pattern `^[0-9]+$`; stringified decimals carry `format: decimal` and pattern `^-?[0-9]+(\\.[0-9]+)?$`; a decimal limited to N decimal places narrows the fraction to `[0-9]{1,N}` (e.g. `^-?[0-9]+(\\.[0-9]{1,10})?$` allows up to 10). The only numeric JSON field is the error body's `code`.\n- Optional fields should be omitted from request if not required. Optional fields also accept `null`, which is treated the same as not sending the field\n- The system ignores any additional parameters sent in the request body that are not specified in this document\n- Free-text fields accept printable ASCII characters only (codes 32-126, from space to `~`) and reject a value made of spaces only. Mandatory fields carry pattern `^ *[!-~][ -~]*$`; optional fields carry `^( *[!-~][ -~]*)?$`, which also accepts an empty value.\n\n**HTTP Error Codes:**\n- 400: Maximum request size exceeded (60KB) or Invalid JSON\n- 401: Invalid token\n- 403: Authentication and authorization errors\n- 404: Route not found\n- 500: Any other error\n- 503: System not available\n- 504: Timeout\n\n**Maker-Checker approval flow** (to activate, contact the operations team):\n\nThe maker-checker process is a workflow that requires the approval of at least two individuals to agree on an action. It involves two parties:\n\n- **Maker**: the person who initiates the action (can always see their own requests and reject them)\n- **Checker**: the person who approves the action (cannot approve their own request)\n\nWhen a user requests an action (like update or create an instrument), the change does not happen immediately - e.g. it won't be shown in the instrument list. The change takes place only after approval. A super user with the right permission can override this flow.\n\nFor any action that is part of the flow, the request can include a `comment` field (String) - the maker's explanation of what the action contains, giving the checker the change context. Like every free-text field, it accepts printable ASCII characters only and cannot be blank.\n\nInstead of the regular response message, any API request involved in the flow returns a `MakerCheckerRequest` entity (see the model below). Its `data` property contains the data model of the requested action, identical to the API specification for that action without maker-checker activated.",
     "contact": {
       "name": "Exberry Support",
       "url": "https://exberry.io"
@@ -170,10 +170,11 @@
                     "AutoResume"
                   ],
                   "x-enumDescriptions": {
-                    "TimeBased": "default)- for regular auction schedule that is based on date and time (you can have many auctions with that trigger",
-                    "Resume": "for auctions that will be triggered as a result of manual resume operation by system operator who will click “Resume” button, or by scheduled resume (you can have only one auction per calendar with that trigger",
-                    "AutoResume": "for auctions that will be triggered as a result of automatic resume operation by system as part of CBR. This can happen in case of a temporary halt that is being configured in Circuit Breaker Rule. (you can have only one auction per calendar with that trigger"
+                    "TimeBased": "for regular auction schedule that is based on date and time (you can have many auctions with that trigger)",
+                    "Resume": "for auctions that will be triggered as a result of manual resume operation by system operator who will click “Resume” button, or by scheduled resume (you can have only one auction per calendar with that trigger)",
+                    "AutoResume": "for auctions that will be triggered as a result of automatic resume operation by system as part of CBR. This can happen in case of a temporary halt that is being configured in Circuit Breaker Rule. (you can have only one auction per calendar with that trigger)"
                   },
+                  "default": "TimeBased",
                   "description": "When the auction is triggered"
                 },
                 "days": {
@@ -205,7 +206,7 @@
                       "ATC"
                     ]
                   },
-                  "description": "List of allowed TIF\nNote: IOC behaves like GAA but allows the use of market orders during the auction\nRefer here for more details"
+                  "description": "List of allowed TIF\nNote: IOC behaves like GAA but allows the use of market orders during the auction\nRefer [here](https://docs.exberry.io/other/business-features/time-in-force) for more details"
                 },
                 "matchingAlgorithm": {
                   "type": "string",
@@ -249,7 +250,7 @@
                 "crossingPause": {
                   "type": "string",
                   "pattern": "^[0-9]+$",
-                  "description": "Auction crossing pause is a time range which will delay the crossing(executions) time from start in milliseconds. During this time - no orders commands can be sent"
+                  "description": "Auction crossing pause is a time range which will delay the crossing(executions) time from start in milliseconds. During this time - no order commands can be sent"
                 },
                 "overrideReferencePrice": {
                   "type": "boolean",
@@ -273,7 +274,7 @@
                       "timeTo": {
                         "type": "string",
                         "pattern": "^[0-9]+$",
-                        "description": "Specify the extension time end in milliseconds\nIn case timeTo > timeFrom , extension will be randomly selected within that range (include timeTo & timeFrom)"
+                        "description": "Specify the extension time end in milliseconds\nIn case timeTo > timeFrom, extension will be randomly selected within that range (including timeTo & timeFrom)"
                       }
                     },
                     "required": [
@@ -319,7 +320,7 @@
           "instrumentId": {
             "type": "string",
             "pattern": "^[0-9]+$",
-            "description": "Instrument ID to apply the cash distribution"
+            "description": "Instrument ID the adjustment factors apply to"
           },
           "exDate": {
             "type": "string",
@@ -396,16 +397,16 @@
             ],
             "x-enumDescriptions": {
               "MARKET_RATE": "monitor market rate changes since the previous day's close rate or daily settlement price if exists.",
-              "DYNAMIC_MARKET_RATE": "monitor market rate changes since the previous trade rate (last price",
+              "DYNAMIC_MARKET_RATE": "monitor market rate changes since the previous trade rate (last price)",
               "MARKET_RATE_POTENTIAL_EXECUTION": "monitor potential executions that may impact market rate changes since the previous day's close rate or daily settlement price if exists.",
-              "DYNAMIC_MARKET_RATE_POTENTIAL_EXECUTION": "monitor potential executions that may impact market rate changes since the previous trade rate (last price"
+              "DYNAMIC_MARKET_RATE_POTENTIAL_EXECUTION": "monitor potential executions that may impact market rate changes since the previous trade rate (last price)"
             }
           },
           "value": {
             "type": "string",
             "format": "decimal",
             "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
-            "description": "The value in percent that considered breach (value > 1 means increase on rate and 0 < value < 1 means decline rate) Example:\n0.8 means decline of 20%\n1.2 means increase of 20%"
+            "description": "The value in percent that is considered a breach (value > 1 means increase on rate and 0 < value < 1 means decline rate) Example:\n0.8 means decline of 20%\n1.2 means increase of 20%"
           },
           "actionType": {
             "type": "string",
@@ -534,7 +535,7 @@
             "x-enumDescriptions": {
               "ACTIVE": "trading allowed",
               "DISABLED": "Trading not allowed",
-              "ARCHIVED": "Can't be used in Create/ Update APIs but only in the Get APIs, for more details see here"
+              "ARCHIVED": "Can't be used in Create/ Update APIs but only in the Get APIs, for more details see [here](https://docs.exberry.io/admin-api/instruments/archive-instrument)"
             }
           },
           "description": {
@@ -569,7 +570,7 @@
             "type": "string",
             "format": "decimal",
             "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
-            "description": "Order quantity must be multiplied by the quantity increment"
+            "description": "Order quantity must be a multiple of the quantity increment"
           },
           "tickSizeTableId": {
             "type": "string",
@@ -620,7 +621,7 @@
               "properties": {
                 "type": {
                   "type": "string",
-                  "description": "One of the below values:\nRefer Trade Entry/type field for the values; all values are supported"
+                  "description": "Refer Trade Entry/type field for the values; all values are supported"
                 },
                 "timestamp": {
                   "type": "string",
@@ -781,7 +782,7 @@
               "STRIP",
               "STRIP2"
             ],
-            "description": "Mandatory if Category = K (Strategies) Strategy type"
+            "description": "Mandatory if Category = K (Strategies)\nStrategy type"
           },
           "legsInstrumentIds": {
             "type": "array",
@@ -842,7 +843,7 @@
               "_30E_360",
               "ACT_365"
             ],
-            "description": "Only if Category = D(Debt instruments)\nThe Convention calculate accrual of the coupon"
+            "description": "Only if Category = D(Debt instruments)\nThe convention used to calculate accrual of the coupon"
           },
           "maturityDate": {
             "type": "string",
@@ -895,7 +896,7 @@
           "allegedTradeExpireTimePeriod": {
             "type": "string",
             "pattern": "^[0-9]+$",
-            "description": "Active Alleged Trades are canceled by the system If configured, after allegedTradeExpireTimePeriod\nIf not configured, at EOD"
+            "description": "Active Alleged Trades are canceled by the system\nIf configured, after allegedTradeExpireTimePeriod\nIf not configured, at EOD"
           },
           "minQuantityTradeEntries": {
             "type": "array",
@@ -904,7 +905,7 @@
               "properties": {
                 "type": {
                   "type": "string",
-                  "description": "trade entry type\nOne of the below values the:\nRefer Trade Entry/type field for the values; all values are supported"
+                  "description": "trade entry type\nRefer Trade Entry/type field for the values; all values are supported"
                 },
                 "amount": {
                   "type": "string",
@@ -1225,9 +1226,9 @@
             ],
             "x-enumDescriptions": {
               "Active": "can trade.",
-              "Blocked": "can't send any order RFQ, Quote and Alleged Trade command"
+              "Blocked": "can't send any order, RFQ, Quote and Alleged Trade command"
             },
-            "description": "When MP is active, status field will not be included\n!Note: This action cancel all the resting orders active RFQs, Quotes and Alleged Trades of this mp"
+            "description": "When MP is active, status field will not be included\n!Note: This action cancels all the resting orders, active RFQs, Quotes and Alleged Trades of this MP"
           },
           "selfTradePrevention": {
             "type": "boolean",
@@ -1367,7 +1368,7 @@
           "cancelOnDisconnect": {
             "type": "boolean",
             "default": false,
-            "description": "- true: when there is disconnection all resting orders, active Quotes and active Alleged Trades are canceled\nNote: The field can set to be true only when one of the below permission is included:\n- \"market-service:market:place_order\"\n- \"market-service:market:submit_rfq_quotes\"\n- \"market-service:market:create_trade_report\""
+            "description": "- true: when there is disconnection all resting orders, active Quotes and active Alleged Trades are canceled\nNote: The field can be set to true only when one of the below permissions is included:\n- \"market-service:market:place_order\"\n- \"market-service:market:submit_rfq_quotes\"\n- \"market-service:market:create_trade_report\""
           },
           "allowedInstrumentGroupIds": {
             "type": "array",
@@ -1571,7 +1572,7 @@
                   "type": "string",
                   "format": "decimal",
                   "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
-                  "description": "Mandatory on all items except the last one.\nPrice to- use the price when order price ≤ to this price and > from previous price (this array need to be sorted)\nNot sent on the last item, which applies to all order prices above the previous price"
+                  "description": "Mandatory on all items except the last one.\nPrice to - use the tick size when order price ≤ this price and > the previous price (this array needs to be sorted)\nNot sent on the last item, which applies to all order prices above the previous price"
                 },
                 "tickSize": {
                   "type": "string",
@@ -1666,7 +1667,7 @@
   "tags": [
     {
       "name": "Authentication",
-      "description": "Any Admin API access will be provided an email and password.\nEach email is assigned with the relevant permissions.\nBefore sending any request to Admin API, consumer needs to authenticate by calling the \"Get Token\" API and receiving `token`.\nThis token should be used as Authorization (Bearer Token) for all other API methods.\nToken expiration time is sent in the response along with token, need to regenerate the token when expiry time reached."
+      "description": "Any Admin API access will be provided an email and password.\nEach email is assigned with the relevant permissions.\nBefore sending any request to Admin API, consumer needs to authenticate by calling the \"Get Token\" API and receiving `token`.\nThis token should be used as Authorization (Bearer Token) for all other API methods.\nToken expiration time is sent in the response along with the token; the token needs to be regenerated when it expires."
     },
     {
       "name": "Instruments",
@@ -1674,7 +1675,7 @@
     },
     {
       "name": "Instrument Groups",
-      "description": "Instrument groups allows users to manage instrument grouping with few levels of hierarchy.\nThis is internal feature allow exchange operators to group instruments as needed (this information is not published to participants/ traders anywhere).\nAfter creating the groups, an instrument can be added and removed to/ from a group.\nInstrument Groups API allows you to:\n- Get single Instrument Group details\n- Get the list of all instrument Groups with their details\n- Create an Instrument Group\n- Update an existing Instrument Group"
+      "description": "Instrument groups allows users to manage instrument grouping with few levels of hierarchy.\nThis is an internal feature that allows exchange operators to group instruments as needed (this information is not published to participants/ traders anywhere).\nAfter creating the groups, an instrument can be added and removed to/ from a group.\nInstrument Groups API allows you to:\n- Get single Instrument Group details\n- Get the list of all instrument Groups with their details\n- Create an Instrument Group\n- Update an existing Instrument Group"
     },
     {
       "name": "Calendars",
@@ -1682,15 +1683,15 @@
     },
     {
       "name": "MPs",
-      "description": "MP API allows you to:\n- Get single MP details\n- Get the list of all MPs with their details\n- Create MP\n- Update existing MP\nMP Object"
+      "description": "MP API allows you to:\n- Get single MP details\n- Get the list of all MPs with their details\n- Create MP\n- Update existing MP"
     },
     {
       "name": "MP Groups",
-      "description": "MP Group allows you to configure read only access for group of market participants (or all of them).\nMP Groups API allows you to:\n- Get single MP Group details\n- Get the list of all MP Groups with their details\n- Create MP Group\n- Update existing MP Group\nMP Group Object"
+      "description": "MP Group allows you to configure read only access for group of market participants (or all of them).\nMP Groups API allows you to:\n- Get single MP Group details\n- Get the list of all MP Groups with their details\n- Create MP Group\n- Update existing MP Group"
     },
     {
       "name": "Accounts",
-      "description": "Accounts API allows you to:\n- Get single Account details\n- Get the list of all Accounts with their details\n- Create Account\n- Update existing Account\nAccount Object"
+      "description": "Accounts API allows you to:\n- Get single Account details\n- Get the list of all Accounts with their details\n- Create Account\n- Update existing Account"
     },
     {
       "name": "CBR",
@@ -1702,7 +1703,7 @@
     },
     {
       "name": "Operations",
-      "description": "Operations API allows you to send operational command"
+      "description": "Operations API allows you to send operational commands"
     }
   ],
   "paths": {
@@ -1806,7 +1807,7 @@
         "tags": [
           "Instruments"
         ],
-        "description": "This API allows to create a new instrument.\n\nID will be returned in the response, this ID is the unique identifier of the instrument and should be used when sending update commands.\n\nNote: this ID can be retrieved via Get Instruments API.\n\n#### Create Instrument- Error Codes\n\n| Code | Message |\n| --- | --- |\n| 1 | System is unavailable |\n| 100 | Missing or invalid parameter: \\[FieldName\\] |\n| 101 | \\[FieldName\\] not found |\n| 101 | \\[FieldName\\] must be less than or equal to maxLong/10^ fieldPrecision |\n| 101 | \\[FieldName\\] must be more than or equal to minLong/10^ fieldPrecision |\n| 101 | Precision of \\[Fieldname\\] is greater than \\[quantityPrecision\\] |\n| 101 | Precision of \\[Fieldname\\] is greater than \\[pricePrecision\\] |\n| 101 | Precision of quantityIncrement must be \\[quantityPrecision\\] (quantityPrecision) |\n| 101 | minQuantity should be less than maxQuantity or equal to it |\n| 101 | minPrice should be less than maxPrice or equal to it |\n| 101 | maxQuantity should be less than maxDepth or equal to it |\n| 101 | Stop Date must be after Start Date |\n| 101 | Stop date must be in future |\n| 101 | underlyingInstrumentId/legsInstrumentIds not found |\n| 101 | Legs \\[price/quantity\\] precision must be equal to strategy price precision |\n| 102 | symbol already exists for id: \\[instrumentId\\] |\n| 104 | Implied orders are not allowed for \\[leg/strategySymbol\\] while included in the \\[CBRName\\] CBR |\n| 105 | Legs \\[price/quantity\\] precision must be equal to strategy price precision |\n| 105 | Strategies are not allowed as legs |\n| 105 | Legs and Strategy calendars must be the same  <br>  <br>Note: this validation relevant only for active instruments |\n| 2603 | \\[fieldName\\] of \\[fieldValue\\] is not allowed as instrument price precision is \\[instrumentPricePrecision\\] |\n| 2605 | \\[FieldName\\] must be less than maxLong/10^ pricePrecision |\n| 10001 | Permission denied |",
+        "description": "This API allows to create a new instrument.\n\nID will be returned in the response, this ID is the unique identifier of the instrument and should be used when sending update commands.\n\nNote: this ID can be retrieved via Get Instruments API.\n\n#### Create Instrument- Error Codes\n\n| Code | Message |\n| --- | --- |\n| 1 | System is unavailable |\n| 100 | Missing or invalid parameter: \\[FieldName\\] |\n| 101 | \\[FieldName\\] not found |\n| 101 | \\[FieldName\\] must be less than or equal to maxLong/10^ fieldPrecision |\n| 101 | \\[FieldName\\] must be more than or equal to minLong/10^ fieldPrecision |\n| 101 | Precision of \\[Fieldname\\] is greater than \\[quantityPrecision\\] |\n| 101 | Precision of \\[Fieldname\\] is greater than \\[pricePrecision\\] |\n| 101 | Precision of quantityIncrement must be \\[quantityPrecision\\] (quantityPrecision) |\n| 101 | minQuantity should be less than maxQuantity or equal to it |\n| 101 | minPrice should be less than maxPrice or equal to it |\n| 101 | maxQuantity should be less than maxDepth or equal to it |\n| 101 | Stop Date must be after Start Date |\n| 101 | Stop date must be in future |\n| 101 | underlyingInstrumentId/legsInstrumentIds not found |\n| 101 | Legs \\[price/quantity\\] precision must be equal to strategy price precision |\n| 102 | symbol already exists for id: \\[instrumentId\\] |\n| 104 | Implied orders are not allowed for \\[leg/strategySymbol\\] while included in the \\[CBRName\\] CBR |\n| 105 | Legs \\[price/quantity\\] precision must be equal to strategy price precision |\n| 105 | Strategies are not allowed as legs |\n| 105 | Legs and Strategy calendars must be the same  <br>  <br>Note: this validation is relevant only for active instruments |\n| 2603 | \\[fieldName\\] of \\[fieldValue\\] is not allowed as instrument price precision is \\[instrumentPricePrecision\\] |\n| 2605 | \\[FieldName\\] must be less than maxLong/10^ pricePrecision |\n| 10001 | Permission denied |",
         "parameters": [],
         "responses": {
           "200": {
@@ -1889,7 +1890,7 @@
         "tags": [
           "Instruments"
         ],
-        "description": "This API allows to get a list of all instruments with their details.\n\n#### Get Instruments- Fields\n\n**Example for derivativeInstrumentCategory instrument -**\n\n- InstrumentId: 1,\n\n- InstrumentId: 2,\n\n- InstrumentId: 3,\n\n- InstrumentId: 4,\n\n- InstrumentId: 10, underlyingInstrumentId: 1, category: Futures, status: active\n\n- InstrumentId: 11, underlyingInstrumentId: 2, category: Futures, status: disabled\n\n- InstrumentId: 12, underlyingInstrumentId: 3, category: Spot, status: active\n\n- InstrumentId: 13, underlyingInstrumentId: 4, category: Spot, status: disabled\n\n\nWhen Derivative Instrument Category = Futures → InstrumentId:1 is returned.\n\nWhen Derivative Instrument Category = Spot →InstrumentId:3 is returned.\n\n#### Suffix & Prefix\n\n| Pattern Type | Description | Sample |\n| --- | --- | --- |\n| Contains the word \"X\" | Find any description/ symbols that contains \"X\" | X |\n| Starts with \"X\" | Find any description/ symbols that start with \"X\" | X\\* |\n| Ends with \"X\" | Find any description/ symbol that ends with \"X\" | \\*X |\n| Equal to 'X' | Find any description/ symbol that = \"X\" | 'X' |\n\n#### Get Instrument- Error Codes\n\n| Code | Message |\n| --- | --- |\n| 102 | Single category should be sent |\n| 102 | Wrong Sub Category |\n| 102 | Strategies category should be sent |\n| 100 | Missing or invalid parameter: \\[FieldName\\] |",
+        "description": "This API allows to get a list of all instruments with their details.\n\n#### Get Instruments- Fields\n\n**Example for derivativeInstrumentCategory instrument -**\n\n- InstrumentId: 1,\n\n- InstrumentId: 2,\n\n- InstrumentId: 3,\n\n- InstrumentId: 4,\n\n- InstrumentId: 10, underlyingInstrumentId: 1, category: Futures, status: active\n\n- InstrumentId: 11, underlyingInstrumentId: 2, category: Futures, status: disabled\n\n- InstrumentId: 12, underlyingInstrumentId: 3, category: Spot, status: active\n\n- InstrumentId: 13, underlyingInstrumentId: 4, category: Spot, status: disabled\n\n\nWhen Derivative Instrument Category = Futures → InstrumentId:1 is returned.\n\nWhen Derivative Instrument Category = Spot →InstrumentId:3 is returned.\n\n#### Suffix & Prefix\n\n| Pattern Type | Description | Sample |\n| --- | --- | --- |\n| Contains the word \"X\" | Find any description/ symbols that contains \"X\" | X |\n| Starts with \"X\" | Find any description/ symbols that start with \"X\" | X\\* |\n| Ends with \"X\" | Find any description/ symbol that ends with \"X\" | \\*X |\n| Equal to 'X' | Find any description/ symbol that = \"X\" | 'X' |\n\n#### Get Instruments- Error Codes\n\n| Code | Message |\n| --- | --- |\n| 102 | Single category should be sent |\n| 102 | Wrong Sub Category |\n| 102 | Strategies category should be sent |\n| 100 | Missing or invalid parameter: \\[FieldName\\] |",
         "parameters": [
           {
             "name": "symbol",
@@ -2000,7 +2001,7 @@
             "schema": {
               "type": "string"
             },
-            "description": "Search instruments that has an underlying instrument and is in this category & active\nFor example see below\nfor values see in the Category List - here"
+            "description": "Search instruments that have an underlying instrument and are in this category & active\nFor example see below\nfor values see in the Category List - [here](https://docs.exberry.io/admin-api/models#instrumentcategory)"
           },
           {
             "name": "statuses",
@@ -2031,7 +2032,7 @@
                 "type": "string"
               }
             },
-            "description": "Search by category\nfor values see in the Category List - here\n\nPass multiple values with bracket notation: `?categories[]=value1&categories[]=value2`",
+            "description": "Search by category\nfor values see in the Category List - [here](https://docs.exberry.io/admin-api/models#instrumentcategory)\n\nPass multiple values with bracket notation: `?categories[]=value1&categories[]=value2`",
             "style": "form",
             "explode": true
           },
@@ -2042,7 +2043,7 @@
             "schema": {
               "type": "string"
             },
-            "description": "Search by sub-category\nfor values see in the SubCategory List - here"
+            "description": "Search by sub-category\nfor values see in the SubCategory List - [here](https://docs.exberry.io/admin-api/models#instrumentsubcategory)"
           },
           {
             "name": "strategyType",
@@ -2543,7 +2544,7 @@
         "tags": [
           "Instruments"
         ],
-        "description": "This API allows to archiving of existing instrument\n\nPlease contact the Exberry team if you would like to enable it on your system.\n\nIn order to support a large number of instruments we introduce the ability to archive instruments.\n\nThis is an irreversible operation that should happen only in case the instrument is no longer in use permanently.\n\nWhen an instrument is archived, you can still access historical financial information about it, including Orders, Order events, Trades, and Ops reports. You can also create a new instrument with the same symbol, but the archived instrument is no longer tradable.\n\nArchived instruments will be served only in those places:\n\n- Reporting\n\n    - Orders\n\n    - Orders event\n\n    - Trades\n\n    - Operations\n\n- Reporting API:\n\n    - vN/exchange.reporting/mp/orders\n\n    - vN/exchange.reporting/mp/trades\n\n\nIn all other APIs, archived instruments will not be served.\n\nPrior to archiving an instrument, it must first be disabled, in case this instrument is a leg of a strategy, the parent must be archived prior to its legs.\n\n#### Archive Instrument- Error Codes\n\n| Code | Message |\n| --- | --- |\n| 1 | Exchange is unavailable |\n| 100 | Missing or invalid parameter: \\[FieldName\\] |\n| 101 | \\[FieldName\\] not found |\n| 102 | Disable the instrument before attempting to archive it |\n| 106 | Archiving strategy \\[parentSymbol\\] is required |\n| 107  <br>Note: This validation will only take effect after the first update for that instrument | This instrument is underlying instrument of \\[Derivative Symbol\\] |\n| 10001 | Permission denied |",
+        "description": "This API allows archiving an existing instrument\n\nPlease contact the Exberry team if you would like to enable it on your system.\n\nIn order to support a large number of instruments we introduce the ability to archive instruments.\n\nThis is an irreversible operation that should happen only in case the instrument is no longer in use permanently.\n\nWhen an instrument is archived, you can still access historical financial information about it, including Orders, Order events, Trades, and Ops reports. You can also create a new instrument with the same symbol, but the archived instrument is no longer tradable.\n\nArchived instruments will be served only in those places:\n\n- Reporting\n\n    - Orders\n\n    - Orders event\n\n    - Trades\n\n    - Operations\n\n- Reporting API:\n\n    - vN/exchange.reporting/mp/orders\n\n    - vN/exchange.reporting/mp/trades\n\n\nIn all other APIs, archived instruments will not be served.\n\nPrior to archiving an instrument, it must first be disabled, in case this instrument is a leg of a strategy, the parent must be archived prior to its legs.\n\n#### Archive Instrument- Error Codes\n\n| Code | Message |\n| --- | --- |\n| 1 | Exchange is unavailable |\n| 100 | Missing or invalid parameter: \\[FieldName\\] |\n| 101 | \\[FieldName\\] not found |\n| 102 | Disable the instrument before attempting to archive it |\n| 106 | Archiving strategy \\[parentSymbol\\] is required |\n| 107  <br>Note: This validation will only take effect after the first update for that instrument | This instrument is underlying instrument of \\[Derivative Symbol\\] |\n| 10001 | Permission denied |",
         "parameters": [
           {
             "name": "id",
@@ -6132,7 +6133,7 @@
                   "instrumentId": {
                     "type": "string",
                     "pattern": "^[0-9]+$",
-                    "description": "Instrument id for the trade"
+                    "description": "Instrument id for the order"
                   },
                   "orderId": {
                     "type": "string",
@@ -6173,7 +6174,7 @@
         "tags": [
           "Operations"
         ],
-        "description": "Replace Order API allows you to replace an order for mp.\n\nFor more details about replace order - see [here](https://docs.exberry.io/ws/trading-api#replaceorder)\n\n#### Replace Order - Error Codes\n\n1. Validations: same as [replaceOrder](https://docs.exberry.io/ws/trading-api#replaceorder), with the below changes:\n\n    1. Skip validations 1007 & 1008 &1011 (Authentication related)\n\n2. Additional validations:\n\n\n| Code | Message |\n| --- | --- |\n| 10001 | Permission denied |\n| 108 | Changes to the implied orders are not allowed |",
+        "description": "Replace Order API allows you to replace an order for mp.\n\nFor more details about replace order - see [here](https://docs.exberry.io/ws/trading-api#replaceorder)\n\n#### Replace Order - Error Codes\n\n1. Validations: same as [replaceOrder](https://docs.exberry.io/ws/trading-api#replaceorder), with the below changes:\n\n    1. Skip validations 1007 & 1008 & 1011 (Authentication related)\n\n2. Additional validations:\n\n\n| Code | Message |\n| --- | --- |\n| 10001 | Permission denied |\n| 108 | Changes to the implied orders are not allowed |",
         "parameters": [],
         "responses": {
           "200": {
@@ -6336,7 +6337,7 @@
         "tags": [
           "Operations"
         ],
-        "description": "Mass Cancel API allows you to mass cancel pending activity per request criteria:\n\nRequest Parameters\n\n#### Mass Cancel- Error Codes\n\n| Code | Message |\n| --- | --- |\n| 2001 | Wrong action |\n| 2001 | Wrong instrumentIds |\n| 2401 | Wrong instrumentId: \\[instrumentId\\] |\n| 403 | Permission denied |",
+        "description": "Mass Cancel API allows you to mass cancel pending activity per request criteria.\n\n#### Mass Cancel- Error Codes\n\n| Code | Message |\n| --- | --- |\n| 2001 | Wrong action |\n| 2001 | Wrong instrumentIds |\n| 2401 | Wrong instrumentId: \\[instrumentId\\] |\n| 403 | Permission denied |",
         "parameters": [],
         "responses": {
           "200": {
@@ -6426,7 +6427,7 @@
                       ],
                       "x-enumDescriptions": {
                         "Order": "cancels all orders",
-                        "RFQ": "cancels all RFQs and all active quotes belong to them",
+                        "RFQ": "cancels all RFQs and all active quotes belonging to them",
                         "Quote": "cancels all Quotes",
                         "AllegedTrade": "cancels all Alleged Trades"
                       }
@@ -6555,7 +6556,7 @@
                   },
                   "type": {
                     "type": "string",
-                    "description": "Type of the trade entry\nSee the table below for supported values",
+                    "description": "Type of the trade entry",
                     "enum": [
                       "Block",
                       "Other",
@@ -6757,7 +6758,7 @@
                   "instrumentId": {
                     "type": "string",
                     "pattern": "^[0-9]+$",
-                    "description": "Instrument ID to cancel the orders"
+                    "description": "Instrument ID of the trade to cancel"
                   },
                   "matchId": {
                     "type": "string",
@@ -6838,7 +6839,7 @@
                   "instrumentId": {
                     "type": "string",
                     "pattern": "^[0-9]+$",
-                    "description": "Instrument ID to cancel the orders"
+                    "description": "Instrument ID of the trade to adjust"
                   },
                   "tradeId": {
                     "type": "string",
@@ -6890,7 +6891,7 @@
         "tags": [
           "Operations"
         ],
-        "description": "Apply Cash Distribution API allows you to adjust active orders and current market data fields(not historical) in case of a Corporate Actions that results cash distributions (such as cash dividend).\n\n#### Error Codes\n\n| Code | Message |\n| --- | --- |\n| 1 | System is unavailable |\n| 10001 | Permission denied |\n| 100 | Missing or invalid parameter: \\[FieldName\\] |\n| 100 | \\[FieldName\\] must be ≤ \\[maxLong/10^ fieldPrecision\\] |\n| 100 | \\[FieldName\\] must be ≥ \\[minLong/10^ fieldPrecision\\] |\n| 102 | Instrument trading is not allowed |\n| 102 | Trading is not allowed during auction call |\n| 102 | Trading is not allowed during crossing |\n| 102 | Instrument should be halted when market is open |\n| 102 | Apply Cash Distribution is not allowed when there is no Closing Price |",
+        "description": "Apply Cash Distribution API allows you to adjust active orders and current market data fields (not historical) in case of a Corporate Action that results in cash distributions (such as cash dividend).\n\n#### Error Codes\n\n| Code | Message |\n| --- | --- |\n| 1 | System is unavailable |\n| 10001 | Permission denied |\n| 100 | Missing or invalid parameter: \\[FieldName\\] |\n| 100 | \\[FieldName\\] must be ≤ \\[maxLong/10^ fieldPrecision\\] |\n| 100 | \\[FieldName\\] must be ≥ \\[minLong/10^ fieldPrecision\\] |\n| 102 | Instrument trading is not allowed |\n| 102 | Trading is not allowed during auction call |\n| 102 | Trading is not allowed during crossing |\n| 102 | Instrument should be halted when market is open |\n| 102 | Apply Cash Distribution is not allowed when there is no Closing Price |",
         "parameters": [],
         "responses": {
           "200": {
@@ -6964,8 +6965,8 @@
                   "amount": {
                     "type": "string",
                     "format": "decimal",
-                    "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
-                    "description": "Cash Amount per share\nMaximum 10 decimal places"
+                    "pattern": "^-?[0-9]+(\\.[0-9]{1,10})?$",
+                    "description": "Cash Amount per share"
                   }
                 },
                 "required": [
@@ -6989,7 +6990,7 @@
         "tags": [
           "Operations"
         ],
-        "description": "Apply Security Distribution API allows you to adjust active orders and current market data fields(not historical) in case of a Corporate Actions that results security distributions (such as stock dividend).\n\n#### **Response:**\n\nSame as Apply Cash Distribution\n\n#### Error Codes\n\nSame as Apply Cash Distribution with below exceptions\n\n| Code | Message |\n| --- | --- |\n| 102 | Apply Cash Distribution is not allowed when there is no Closing Price  <br>  <br>Not applicable to Apply Security Distribution |",
+        "description": "Apply Security Distribution API allows you to adjust active orders and current market data fields (not historical) in case of a Corporate Action that results in security distributions (such as stock dividend).\n\n#### **Response:**\n\nSame as Apply Cash Distribution\n\n#### Error Codes\n\nSame as Apply Cash Distribution with below exceptions\n\n| Code | Message |\n| --- | --- |\n| 102 | Apply Cash Distribution is not allowed when there is no Closing Price  <br>  <br>Not applicable to Apply Security Distribution |",
         "parameters": [],
         "responses": {
           "200": {
@@ -7055,19 +7056,19 @@
                   "instrumentId": {
                     "type": "string",
                     "pattern": "^[0-9]+$",
-                    "description": "Instrument ID to apply the cash distribution"
+                    "description": "Instrument ID to apply the security distribution"
                   },
                   "ratioOld": {
                     "type": "string",
                     "format": "decimal",
-                    "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
-                    "description": "ratioOld of the stock dividend/forward split\nMaximum 10 decimal places\nIf 1 new share is issued for each 2 shares held, ratioOld=2 and ratioNew=1. (European Convention)"
+                    "pattern": "^-?[0-9]+(\\.[0-9]{1,10})?$",
+                    "description": "ratioOld of the stock dividend/forward split\nIf 1 new share is issued for each 2 shares held, ratioOld=2 and ratioNew=1. (European Convention)"
                   },
                   "ratioNew": {
                     "type": "string",
                     "format": "decimal",
-                    "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
-                    "description": "ratioNew of the stock dividend/forward split\nMaximum 10 decimal places\nSee description of ratioOld for more details"
+                    "pattern": "^-?[0-9]+(\\.[0-9]{1,10})?$",
+                    "description": "ratioNew of the stock dividend/forward split\nSee description of ratioOld for more details"
                   },
                   "quantityRounding": {
                     "type": "string",
@@ -7395,7 +7396,7 @@
                   "instrumentId": {
                     "type": "string",
                     "pattern": "^[0-9]+$",
-                    "description": "Instrument ID to apply the cash distribution"
+                    "description": "Instrument ID to delete adjustment factors for"
                   },
                   "exDate": {
                     "type": "string",
@@ -7423,7 +7424,7 @@
         "tags": [
           "Operations"
         ],
-        "description": "Set Settlement Price API allows you to set settlement price for an instrument\n\n#### Set Settlement Prices - Error Codes\n\n| Code | Message |\n| --- | --- |\n| 1 | Exchange is unavailable |\n| 100 | Missing or invalid parameter: \\[FieldName\\] |\n| 101 | instrumentId not found |\n| 102 | Currently not allowed |\n| 10001 | Permission denied |",
+        "description": "Set Settlement Price API allows you to set settlement price for an instrument\n\n#### Set Settlement Price - Error Codes\n\n| Code | Message |\n| --- | --- |\n| 1 | Exchange is unavailable |\n| 100 | Missing or invalid parameter: \\[FieldName\\] |\n| 101 | instrumentId not found |\n| 102 | Currently not allowed |\n| 10001 | Permission denied |",
         "parameters": [],
         "responses": {
           "200": {
@@ -7593,7 +7594,7 @@
         "tags": [
           "Operations"
         ],
-        "description": "Trading Halt API allows you to halt the trading for a:\n\n- List of instrument\n\n- List of instrument groups\n\n- All instruments\n\n- Multiple filtered instruments, see [here](https://docs.exberry.io/admin-api/instruments/get-instruments) for more details\n\n\n#### Schedule Halt and Resume\n\n1. When the request sets a halt, it is allowed to specify halt at explicit time as well as the explicit resumption time. If not defined, action is immediate. When scheduling resume, a time gap extension instead of an explicit time can be defined.\n\n2. Examples:\n\n    1. Now it's 14:00 and a user clicks on halt with a time interval of 10 minutes, trading will resume at 14:10.\n\n    2. In addition to the previous example, at 14:07 the user again clicks on halt with a time interval of 5 minutes, trading will resume at 14:15 (14:10 plus the 5 minutes from the latest request).\n\n\n**Behavior Summary**\n\n1. Scheduled Resume can be triggered by one of the below:\n\n    1. CBR: Triggered by CBR\n\n    2. Regular: Triggered by operator (via time interval or explicit time)\n\n\n| New Request | Existing Timers | Behavior |\n| --- | --- | --- |\n| Halt Without Scheduled Resume  <br>  <br>OR  <br>Halt & Scheduled Resume With Explicit Time  <br>  <br>OR  <br>Immediate Resume  <br>  <br>OR  <br>Scheduled Halt  <br>  <br>OR  <br>Scheduled Halt & Scheduled Resume | Scheduled Halt  <br>with/ without any Scheduled Resume  <br>  <br>OR  <br>Scheduled Resume | Drop existing schedule and apply the new command |\n| Halt & Scheduled Resume with Time Interval | Scheduled Resume Regular | Interval of the new request will be added to the original Scheduled Resume time. |\n| Halt & Scheduled Resume with Time Interval | Scheduled CBR Resume  <br>OR  <br>Scheduled Halt  <br>with/ without any Scheduled Resume | Drop existing schedule and apply the new command |\n| CBR Halt with/without Resume | Scheduled Halt  <br>with/ without Scheduled Resume  <br>OR  <br>Scheduled Resume | Doesn’t drop existing scheduled halts/resumes and halts immediately and schedule new resume (if applicable) |\n\n#### Trading Halt - Error Codes\n\n| Code | Message |\n| --- | --- |\n| 2001 | Wrong action |\n| 2001 | Wrong instrumentIds |\n| 2002 | \\[FieldName\\] must be in future |\n| 2003 | Only one of scheduleResumeTime and scheduleResumeTimeInterval is allowed |\n| 2401 | Wrong instrumentId: \\[instrumentId\\] |\n| 2401 | Wrong instrumentGroupIds: \\[instrumentGroupId\\] |\n| 403 | Permission denied |\n| 201 | You can send up to 750 instruments per request |",
+        "description": "Trading Halt API allows you to halt the trading for a:\n\n- List of instruments\n\n- List of instrument groups\n\n- All instruments\n\n- Multiple filtered instruments, see [here](https://docs.exberry.io/admin-api/instruments/get-instruments) for more details\n\n\n#### Schedule Halt and Resume\n\n1. When the request sets a halt, it is allowed to specify halt at explicit time as well as the explicit resumption time. If not defined, action is immediate. When scheduling resume, a time gap extension instead of an explicit time can be defined.\n\n2. Examples:\n\n    1. Now it's 14:00 and a user clicks on halt with a time interval of 10 minutes, trading will resume at 14:10.\n\n    2. In addition to the previous example, at 14:07 the user again clicks on halt with a time interval of 5 minutes, trading will resume at 14:15 (14:10 plus the 5 minutes from the latest request).\n\n\n**Behavior Summary**\n\n1. Scheduled Resume can be triggered by one of the below:\n\n    1. CBR: Triggered by CBR\n\n    2. Regular: Triggered by operator (via time interval or explicit time)\n\n\n| New Request | Existing Timers | Behavior |\n| --- | --- | --- |\n| Halt Without Scheduled Resume  <br>  <br>OR  <br>Halt & Scheduled Resume With Explicit Time  <br>  <br>OR  <br>Immediate Resume  <br>  <br>OR  <br>Scheduled Halt  <br>  <br>OR  <br>Scheduled Halt & Scheduled Resume | Scheduled Halt  <br>with/ without any Scheduled Resume  <br>  <br>OR  <br>Scheduled Resume | Drop existing schedule and apply the new command |\n| Halt & Scheduled Resume with Time Interval | Scheduled Resume Regular | Interval of the new request will be added to the original Scheduled Resume time. |\n| Halt & Scheduled Resume with Time Interval | Scheduled CBR Resume  <br>OR  <br>Scheduled Halt  <br>with/ without any Scheduled Resume | Drop existing schedule and apply the new command |\n| CBR Halt with/without Resume | Scheduled Halt  <br>with/ without Scheduled Resume  <br>OR  <br>Scheduled Resume | Doesn’t drop existing scheduled halts/resumes and halts immediately and schedules new resume (if applicable) |\n\n#### Trading Halt - Error Codes\n\n| Code | Message |\n| --- | --- |\n| 2001 | Wrong action |\n| 2001 | Wrong instrumentIds |\n| 2002 | \\[FieldName\\] must be in future |\n| 2003 | Only one of scheduleResumeTime and scheduleResumeTimeInterval is allowed |\n| 2401 | Wrong instrumentId: \\[instrumentId\\] |\n| 2401 | Wrong instrumentGroupIds: \\[instrumentGroupId\\] |\n| 403 | Permission denied |\n| 201 | You can send up to 750 instruments per request |",
         "parameters": [],
         "responses": {
           "200": {
@@ -7690,7 +7691,7 @@
                   "scheduleResumeTimeInterval": {
                     "type": "string",
                     "pattern": "^[0-9]+$",
-                    "description": "When to resume trading in minutes Interval"
+                    "description": "When to resume trading, as an interval in minutes"
                   },
                   "symbol": {
                     "type": "string",
@@ -7746,7 +7747,7 @@
                   },
                   "derivativeInstrumentCategory": {
                     "type": "string",
-                    "description": "Search instruments that has an underlying instrument and is in this category & active\nFor example see Get Instruments\nfor values see in the Category List - here"
+                    "description": "Search instruments that have an underlying instrument and are in this category & active\nFor example see Get Instruments\nfor values see in the Category List - [here](https://docs.exberry.io/admin-api/models#instrumentcategory)"
                   },
                   "statuses": {
                     "type": "array",
@@ -7765,11 +7766,11 @@
                     "items": {
                       "type": "string"
                     },
-                    "description": "Search by category\nfor values see in the Category List - here"
+                    "description": "Search by category\nfor values see in the Category List - [here](https://docs.exberry.io/admin-api/models#instrumentcategory)"
                   },
                   "subCategory": {
                     "type": "string",
-                    "description": "Search by sub-category\nfor values see in the SubCategory List - here"
+                    "description": "Search by sub-category\nfor values see in the SubCategory List - [here](https://docs.exberry.io/admin-api/models#instrumentsubcategory)"
                   },
                   "strategyType": {
                     "type": "string",
@@ -7829,7 +7830,7 @@
         "tags": [
           "Operations"
         ],
-        "description": "Trading Resume API allows you to resume the trading for a:\n\n- List of instrument\n\n- List of instrument groups\n\n- All instruments\n\n- Multiple filtered instruments, see [here](https://docs.exberry.io/admin-api/instruments/get-instruments) for more details\n\n\n#### Trading Resume - Error Codes\n\n| Code | Message |\n| --- | --- |\n| 2001 | Wrong action |\n| 2001 | Wrong instrumentIds |\n| 2001 | Wrong \\[FieldName\\] |\n| 2401 | Wrong instrumentId: \\[instrumentId\\] |\n| 2401 | Wrong instrumentGroupIds: \\[instrumentGroupId\\] |\n| 403 | Permission denied |\n| 201 | You can send up to 750 instruments per request |",
+        "description": "Trading Resume API allows you to resume the trading for a:\n\n- List of instruments\n\n- List of instrument groups\n\n- All instruments\n\n- Multiple filtered instruments, see [here](https://docs.exberry.io/admin-api/instruments/get-instruments) for more details\n\n\n#### Trading Resume - Error Codes\n\n| Code | Message |\n| --- | --- |\n| 2001 | Wrong action |\n| 2001 | Wrong instrumentIds |\n| 2001 | Wrong \\[FieldName\\] |\n| 2401 | Wrong instrumentId: \\[instrumentId\\] |\n| 2401 | Wrong instrumentGroupIds: \\[instrumentGroupId\\] |\n| 403 | Permission denied |\n| 201 | You can send up to 750 instruments per request |",
         "parameters": [],
         "responses": {
           "200": {
@@ -7957,7 +7958,7 @@
                   },
                   "derivativeInstrumentCategory": {
                     "type": "string",
-                    "description": "Search instruments that has an underlying instrument and is in this category & active\nFor example see Get Instruments\nfor values see in the Category List - here"
+                    "description": "Search instruments that have an underlying instrument and are in this category & active\nFor example see Get Instruments\nfor values see in the Category List - [here](https://docs.exberry.io/admin-api/models#instrumentcategory)"
                   },
                   "statuses": {
                     "type": "array",
@@ -7976,11 +7977,11 @@
                     "items": {
                       "type": "string"
                     },
-                    "description": "Search by category\nfor values see in the Category List - here"
+                    "description": "Search by category\nfor values see in the Category List - [here](https://docs.exberry.io/admin-api/models#instrumentcategory)"
                   },
                   "subCategory": {
                     "type": "string",
-                    "description": "Search by sub-category\nfor values see in the SubCategory List - here"
+                    "description": "Search by sub-category\nfor values see in the SubCategory List - [here](https://docs.exberry.io/admin-api/models#instrumentsubcategory)"
                   },
                   "strategyType": {
                     "type": "string",
@@ -8022,7 +8023,7 @@
         "tags": [
           "Operations"
         ],
-        "description": "\n\nSet News API allows you to submit news to the system\n\n#### Set News - Error Codes\n\n| Code | Message |\n| --- | --- |\n| 1 | Exchange is unavailable |\n| 100 | Missing or invalid parameter: \\[FieldName\\] |\n| 10001 | Permission denied |",
+        "description": "Set News API allows you to submit news to the system\n\n#### Set News - Error Codes\n\n| Code | Message |\n| --- | --- |\n| 1 | Exchange is unavailable |\n| 100 | Missing or invalid parameter: \\[FieldName\\] |\n| 10001 | Permission denied |",
         "parameters": [],
         "responses": {
           "200": {

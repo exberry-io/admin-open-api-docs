@@ -23,9 +23,9 @@ info:
     **Sandbox environment endpoint:** `https://admin-api.uat.exberry-uat.io`
 
     **Guidelines:**
-    - Numeric values are documented as stringified numbers: responses always return them as strings, and requests accept either a JSON number or its string form. Stringified integers carry pattern `^[0-9]+$`; stringified decimals carry `format: decimal` and pattern `^-?[0-9]+(\.[0-9]+)?$`. The only numeric JSON field is the error body's `code`.
+    - Numeric values are documented as stringified numbers: responses always return them as strings, and requests accept either a JSON number or its string form. Stringified integers carry pattern `^[0-9]+$`; stringified decimals carry `format: decimal` and pattern `^-?[0-9]+(\.[0-9]+)?$`; a decimal limited to N decimal places narrows the fraction to `[0-9]{1,N}` (e.g. `^-?[0-9]+(\.[0-9]{1,10})?$` allows up to 10). The only numeric JSON field is the error body's `code`.
     - Optional fields should be omitted from request if not required. Optional fields also accept `null`, which is treated the same as not sending the field
-    - System ignores any additional parameter that are sent on request body but was not specified in this document
+    - The system ignores any additional parameters sent in the request body that are not specified in this document
     - Free-text fields accept printable ASCII characters only (codes 32-126, from space to `~`) and reject a value made of spaces only. Mandatory fields carry pattern `^ *[!-~][ -~]*$`; optional fields carry `^( *[!-~][ -~]*)?$`, which also accepts an empty value.
 
     **HTTP Error Codes:**
@@ -55,7 +55,7 @@ tags:
     Each email is assigned with the relevant permissions.
     Before sending any request to Admin API, consumer needs to authenticate by calling the "Get Token" API and receiving `token`.
     This token should be used as Authorization (Bearer Token) for all other API methods.
-    Token expiration time is sent in the response along with token, need to regenerate the token when expiry time reached.
+    Token expiration time is sent in the response along with the token; the token needs to be regenerated when it expires.
   Instruments: |-
     Instruments API allows you to:
     - Get single instrument details
@@ -66,7 +66,7 @@ tags:
     Samples for both mandatory fields only and all fields can be found in the `Get Instrument` section
   Instrument Groups: |-
     Instrument groups allows users to manage instrument grouping with few levels of hierarchy.
-    This is internal feature allow exchange operators to group instruments as needed (this information is not published to participants/ traders anywhere).
+    This is an internal feature that allows exchange operators to group instruments as needed (this information is not published to participants/ traders anywhere).
     After creating the groups, an instrument can be added and removed to/ from a group.
     Instrument Groups API allows you to:
     - Get single Instrument Group details
@@ -86,7 +86,6 @@ tags:
     - Get the list of all MPs with their details
     - Create MP
     - Update existing MP
-    MP Object
   MP Groups: |-
     MP Group allows you to configure read only access for group of market participants (or all of them).
     MP Groups API allows you to:
@@ -94,14 +93,12 @@ tags:
     - Get the list of all MP Groups with their details
     - Create MP Group
     - Update existing MP Group
-    MP Group Object
   Accounts: |-
     Accounts API allows you to:
     - Get single Account details
     - Get the list of all Accounts with their details
     - Create Account
     - Update existing Account
-    Account Object
   CBR: |-
     Circuit Breaker Rules (CBR) API allows you to:
     - Get single CBR details
@@ -114,7 +111,7 @@ tags:
     - Get the list of all TickSizes with their details
     - Create a TickSize
     - Update existing TickSize
-  Operations: Operations API allows you to send operational command
+  Operations: Operations API allows you to send operational commands
 operations:
   Get_Token:
     summary: Get Token
@@ -157,7 +154,7 @@ operations:
       | 104 | Implied orders are not allowed for \[leg/strategySymbol\] while included in the \[CBRName\] CBR |
       | 105 | Legs \[price/quantity\] precision must be equal to strategy price precision |
       | 105 | Strategies are not allowed as legs |
-      | 105 | Legs and Strategy calendars must be the same  <br>  <br>Note: this validation relevant only for active instruments |
+      | 105 | Legs and Strategy calendars must be the same  <br>  <br>Note: this validation is relevant only for active instruments |
       | 2603 | \[fieldName\] of \[fieldValue\] is not allowed as instrument price precision is \[instrumentPricePrecision\] |
       | 2605 | \[FieldName\] must be less than maxLong/10^ pricePrecision |
       | 10001 | Permission denied |
@@ -200,7 +197,7 @@ operations:
       | Ends with "X" | Find any description/ symbol that ends with "X" | \*X |
       | Equal to 'X' | Find any description/ symbol that = "X" | 'X' |
 
-      #### Get Instrument- Error Codes
+      #### Get Instruments- Error Codes
 
       | Code | Message |
       | --- | --- |
@@ -236,7 +233,7 @@ operations:
   Archive_Instrument:
     summary: Archive Instrument
     description: |-
-      This API allows to archiving of existing instrument
+      This API allows archiving an existing instrument
 
       Please contact the Exberry team if you would like to enable it on your system.
 
@@ -697,7 +694,7 @@ operations:
 
       1. Validations: same as [replaceOrder](https://docs.exberry.io/ws/trading-api#replaceorder), with the below changes:
 
-          1. Skip validations 1007 & 1008 &1011 (Authentication related)
+          1. Skip validations 1007 & 1008 & 1011 (Authentication related)
 
       2. Additional validations:
 
@@ -709,9 +706,7 @@ operations:
   Mass_Cancel:
     summary: Mass Cancel
     description: |-
-      Mass Cancel API allows you to mass cancel pending activity per request criteria:
-
-      Request Parameters
+      Mass Cancel API allows you to mass cancel pending activity per request criteria.
 
       #### Mass Cancel- Error Codes
 
@@ -800,7 +795,7 @@ operations:
   Apply_Cash_Distribution:
     summary: Apply Cash Distribution
     description: |-
-      Apply Cash Distribution API allows you to adjust active orders and current market data fields(not historical) in case of a Corporate Actions that results cash distributions (such as cash dividend).
+      Apply Cash Distribution API allows you to adjust active orders and current market data fields (not historical) in case of a Corporate Action that results in cash distributions (such as cash dividend).
 
       #### Error Codes
 
@@ -819,7 +814,7 @@ operations:
   Apply_Security_Distribution:
     summary: Apply Security Distribution
     description: |-
-      Apply Security Distribution API allows you to adjust active orders and current market data fields(not historical) in case of a Corporate Actions that results security distributions (such as stock dividend).
+      Apply Security Distribution API allows you to adjust active orders and current market data fields (not historical) in case of a Corporate Action that results in security distributions (such as stock dividend).
 
       #### **Response:**
 
@@ -878,7 +873,7 @@ operations:
     description: |-
       Set Settlement Price API allows you to set settlement price for an instrument
 
-      #### Set Settlement Prices - Error Codes
+      #### Set Settlement Price - Error Codes
 
       | Code | Message |
       | --- | --- |
@@ -905,7 +900,7 @@ operations:
     description: |-
       Trading Halt API allows you to halt the trading for a:
 
-      - List of instrument
+      - List of instruments
 
       - List of instrument groups
 
@@ -939,7 +934,7 @@ operations:
       | Halt Without Scheduled Resume  <br>  <br>OR  <br>Halt & Scheduled Resume With Explicit Time  <br>  <br>OR  <br>Immediate Resume  <br>  <br>OR  <br>Scheduled Halt  <br>  <br>OR  <br>Scheduled Halt & Scheduled Resume | Scheduled Halt  <br>with/ without any Scheduled Resume  <br>  <br>OR  <br>Scheduled Resume | Drop existing schedule and apply the new command |
       | Halt & Scheduled Resume with Time Interval | Scheduled Resume Regular | Interval of the new request will be added to the original Scheduled Resume time. |
       | Halt & Scheduled Resume with Time Interval | Scheduled CBR Resume  <br>OR  <br>Scheduled Halt  <br>with/ without any Scheduled Resume | Drop existing schedule and apply the new command |
-      | CBR Halt with/without Resume | Scheduled Halt  <br>with/ without Scheduled Resume  <br>OR  <br>Scheduled Resume | Doesn’t drop existing scheduled halts/resumes and halts immediately and schedule new resume (if applicable) |
+      | CBR Halt with/without Resume | Scheduled Halt  <br>with/ without Scheduled Resume  <br>OR  <br>Scheduled Resume | Doesn’t drop existing scheduled halts/resumes and halts immediately and schedules new resume (if applicable) |
 
       #### Trading Halt - Error Codes
 
@@ -958,7 +953,7 @@ operations:
     description: |-
       Trading Resume API allows you to resume the trading for a:
 
-      - List of instrument
+      - List of instruments
 
       - List of instrument groups
 
@@ -981,8 +976,6 @@ operations:
   Set_News:
     summary: Set News
     description: |-
-      
-
       Set News API allows you to submit news to the system
 
       #### Set News - Error Codes

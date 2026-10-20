@@ -230,6 +230,10 @@ the saved response examples is a string (`id: "12208"`, `minQuantity: "0.0001"`,
 flexibility but wrong for responses, renders badly in Scalar (see #6), and produces awkward
 union types across ~68 fields in every generated SDK. The request flexibility is stated once
 in the API guidelines instead.
+**Documented decimal limits narrow the fraction:** a field limited to N decimal places (the
+corporate-action `amount`, `ratioOld`, `ratioNew`: 10) carries `^-?[0-9]+(\.[0-9]{1,N})?$`,
+and the limit is not repeated in its description (same rule as #30); the API guidelines
+explain how to read `{1,N}` once.
 **Exception — `CircuitBreakerRule.actionValue`:** "leave empty" may also be sent as `""`
 (confirmed by the team), so its pattern accepts an empty value —
 `^(-?[0-9]+(\.[0-9]+)?)?$`, #28's optional-field variant applied to a number. (`null` is
