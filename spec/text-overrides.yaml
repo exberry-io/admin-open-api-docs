@@ -24,7 +24,7 @@ info:
 
     **Guidelines:**
     - Numeric values are documented as stringified numbers: responses always return them as strings, and requests accept either a JSON number or its string form. Stringified integers carry pattern `^[0-9]+$`; stringified decimals carry `format: decimal` and pattern `^-?[0-9]+(\.[0-9]+)?$`. The only numeric JSON field is the error body's `code`.
-    - Optional fields should be omitted from request if not required
+    - Optional fields should be omitted from request if not required. Optional fields also accept `null`, which is treated the same as not sending the field
     - System ignores any additional parameter that are sent on request body but was not specified in this document
     - Free-text fields accept printable ASCII characters only (codes 32-126, from space to `~`) and reject a value made of spaces only. Mandatory fields carry pattern `^ *[!-~][ -~]*$`; optional fields carry `^( *[!-~][ -~]*)?$`, which also accepts an empty value.
 
@@ -906,7 +906,7 @@ operations:
 
       - All instruments
 
-      - Multiple filtered instruments, see [here](https://documenter.getpostman.com/view/6229811/TzCV3jcq#c1b23770-4cc1-41b0-a035-15f3e280bbe4) for more details
+      - Multiple filtered instruments, see [here](https://docs.exberry.io/admin-api/instruments/get-instruments) for more details
 
 
       #### Schedule Halt and Resume 
@@ -959,7 +959,7 @@ operations:
 
       - All instruments
 
-      - Multiple filtered instruments, see [here](https://documenter.getpostman.com/view/6229811/TzCV3jcq#c1b23770-4cc1-41b0-a035-15f3e280bbe4) for more details
+      - Multiple filtered instruments, see [here](https://docs.exberry.io/admin-api/instruments/get-instruments) for more details
 
 
       #### Trading Resume - Error Codes

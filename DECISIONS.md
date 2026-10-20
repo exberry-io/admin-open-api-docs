@@ -148,7 +148,7 @@ Side effect: ~24 KB smaller spec (fewer duplicated inline schemas).
 **Decision:** MP Group API keys are modeled as their own schema rather than an
 `allOf` alias of `MpApiKey`. It carries only the applicable fields — `label`, `permissions`
 (8-value group subset enum), `mpGroupId`, `apiKey`, `secret`, `ownerId`, `ownerType` — and
-omits `mpId`, `accountId`, `allowedInstrumentGroupIds`, `cancelOnDisconncet`.
+omits `mpId`, `accountId`, `allowedInstrumentGroupIds`, `cancelOnDisconnect`.
 **Why:** OpenAPI 3.0 `allOf` can only add properties, never remove them, so an alias would
 keep advertising four fields that do not apply to group keys.
 **How the DRY benefit is retained:** the shared field definitions are **copied from
@@ -230,6 +230,10 @@ the saved response examples is a string (`id: "12208"`, `minQuantity: "0.0001"`,
 flexibility but wrong for responses, renders badly in Scalar (see #6), and produces awkward
 union types across ~68 fields in every generated SDK. The request flexibility is stated once
 in the API guidelines instead.
+**Exception — `CircuitBreakerRule.actionValue`:** "leave empty" may also be sent as `""`
+(confirmed by the team), so its pattern accepts an empty value —
+`^(-?[0-9]+(\.[0-9]+)?)?$`, #28's optional-field variant applied to a number. (`null` is
+covered by #29.)
 
 ## 25. All error responses share the `ErrorResponse` schema; examples stay per-endpoint
 **Decision:** every 4xx/5xx response points its schema at `ErrorResponse`, while keeping the
@@ -290,6 +294,15 @@ moving a field into or out of `required` means switching its pattern too.
 **Known looseness:** `MarketParticipant.compIds[]` and `MpGroup.compId` are loose because
 neither is in a `required` list, though an empty FIX CompID is probably rejected by the
 backend. Tighten if confirmed.
+
+## 29. `null` on optional fields: stated once in the guidelines, no per-field `nullable`
+**Decision:** the backend accepts `null` on every optional field (confirmed by the team).
+This is stated once in the API guidelines; no schema carries `nullable: true`.
+**Why:** marking every optional field `nullable` would make each one string-or-null in every
+generated SDK, for a value that means the same as not sending the field — #24's reasoning,
+which states the number-or-string flexibility once instead of per field.
+**Trade-off accepted:** strict validators and generated SDKs reject `null`; clients omit the
+field instead, as the guidelines recommend.
 
 ## Operational lessons (keep honoring)
 - Every `open()` in tooling: `encoding='utf-8'` (Windows cp1252 default bit us); `ensure_ascii=False` on output.

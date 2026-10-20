@@ -62,6 +62,9 @@ description.
 **New enum value:** append to `enum` AND `x-enumDescriptions` (and to the description
 bullets where present — e.g. `permissions`).
 
+**New Get Instruments filter:** also add it to the Trading Halt and Trading Resume request
+bodies — they accept the same filters, as body fields (no query-string syntax).
+
 **Review:** the PR's CI runs oasdiff against `main` — read its output as part of review.
 Removed fields / changed types are breaking changes and must be intentional.
 
