@@ -989,7 +989,7 @@ operations:
       | 100 | Missing or invalid parameter: \[FieldName\] |
       | 10001 | Permission denied |
 schema_descriptions:
-  Instrument.properties.symbol: Unique Symbol of the instrument, contains a-z, A-Z, 0-9 and the characters - . ^ / =
+  Instrument.properties.symbol: Unique Symbol of the instrument
   Instrument.properties.startDate: |-
     Mandatory if Category = O (option) OR F (Futures) OR K (Strategies) OR D (Debt instruments)
     Used for derivatives, trading is allowed from this time
@@ -1003,3 +1003,8 @@ schema_descriptions:
   Instrument.properties.deliveryType: |-
     Mandatory if Category = O (option) OR F (Futures) OR K (Strategies)
     Delivery type
+  Instrument.properties.impliedOrderTypes: |-
+    Applicable only if Category = K (Strategies) AND strategyType = SPREAD, STRIP or STRIP2
+    Allowed only if IMPLIED_ORDERS is in the project's featuresFlags
+    Implied order types generated for the strategy
+    The field is included in the responses only when not empty
