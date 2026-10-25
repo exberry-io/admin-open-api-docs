@@ -2,7 +2,7 @@
   "openapi": "3.0.3",
   "info": {
     "title": "Exberry Admin API",
-    "version": "1.62.0",
+    "version": "1.63.0",
     "description": "Exberry Admin API allows managing exchange static data (instruments, trading calendars and more) as well as sending operational commands (EOD, halt trading and more).\n\n**Sandbox environment endpoint:** `https://admin-api.uat.exberry-uat.io`\n\n**Guidelines:**\n- Numeric values are documented as stringified numbers: responses always return them as strings, and requests accept either a JSON number or its string form. Stringified integers carry pattern `^[0-9]+$`; stringified decimals carry `format: decimal` and pattern `^-?[0-9]+(\\.[0-9]+)?$`; a decimal limited to N decimal places narrows the fraction to `[0-9]{1,N}` (e.g. `^-?[0-9]+(\\.[0-9]{1,10})?$` allows up to 10). The only numeric JSON field is the error body's `code`.\n- Optional fields should be omitted from request if not required. Optional fields also accept `null`, which is treated the same as not sending the field\n- The system ignores any additional parameters sent in the request body that are not specified in this document\n- Free-text fields accept printable ASCII characters only (codes 32-126, from space to `~`) and reject a value made of spaces only. Mandatory fields carry pattern `^ *[!-~][ -~]*$`; optional fields carry `^( *[!-~][ -~]*)?$`, which also accepts an empty value.\n\n**HTTP Error Codes:**\n- 400: Maximum request size exceeded (60KB) or Invalid JSON\n- 401: Invalid token\n- 403: Authentication and authorization errors\n- 404: Route not found\n- 500: Any other error\n- 503: System not available\n- 504: Timeout\n\n**Maker-Checker approval flow** (to activate, contact the operations team):\n\nThe maker-checker process is a workflow that requires the approval of at least two individuals to agree on an action. It involves two parties:\n\n- **Maker**: the person who initiates the action (can always see their own requests and reject them)\n- **Checker**: the person who approves the action (cannot approve their own request)\n\nWhen a user requests an action (like update or create an instrument), the change does not happen immediately - e.g. it won't be shown in the instrument list. The change takes place only after approval. A super user with the right permission can override this flow.\n\nFor any action that is part of the flow, the request can include a `comment` field (String) - the maker's explanation of what the action contains, giving the checker the change context. Like every free-text field, it accepts printable ASCII characters only and cannot be blank.\n\nInstead of the regular response message, any API request involved in the flow returns a `MakerCheckerRequest` entity (see the model below). Its `data` property contains the data model of the requested action, identical to the API specification for that action without maker-checker activated.",
     "contact": {
       "name": "Exberry Support",
@@ -489,10 +489,12 @@
           "symbol": {
             "type": "string",
             "maxLength": 16,
-            "description": "Unique Symbol of the instrument, contains [a-Z,0-9,-,.,^,=,/]"
+            "pattern": "^[a-zA-Z0-9.^/=-]{1,16}$",
+            "description": "Unique Symbol of the instrument, contains a-z, A-Z, 0-9 and the characters - . ^ / ="
           },
           "quoteCurrency": {
             "type": "string",
+            "maxLength": 10,
             "pattern": "^ *[!-~][ -~]*$",
             "description": "Quote currency"
           },
@@ -540,6 +542,7 @@
           },
           "description": {
             "type": "string",
+            "maxLength": 1500,
             "description": "Instrument Description"
           },
           "maxDepth": {
@@ -583,6 +586,7 @@
               "type": "string",
               "pattern": "^[0-9]+$"
             },
+            "maxItems": 20,
             "description": "A list of group Ids"
           },
           "category": {
@@ -596,23 +600,25 @@
           },
           "cfi": {
             "type": "string",
+            "pattern": "^([a-zA-Z]{6})?$",
             "description": "CFI code"
           },
           "mic": {
             "type": "string",
+            "pattern": "^([a-zA-Z]{4})?$",
             "description": "MIC code"
           },
           "startDate": {
             "type": "string",
             "pattern": "^[0-9]+$",
             "x-epoch-unit": "seconds",
-            "description": "Mandatory if Category = O (option) OR F (Futures)\nUsed for derivatives, trading is allowed from this time\nBefore this time, marketStatus is in Closed state without changing as per the calendar. — Unix epoch time in seconds"
+            "description": "Mandatory if Category = O (option) OR F (Futures) OR K (Strategies) OR D (Debt instruments)\nUsed for derivatives, trading is allowed from this time\nBefore this time, marketStatus is in Closed state without changing as per the calendar. — Unix epoch time in seconds"
           },
           "stopDate": {
             "type": "string",
             "pattern": "^[0-9]+$",
             "x-epoch-unit": "seconds",
-            "description": "Mandatory if Category = O (option) OR F (Futures)\nUsed for derivatives, trading is allowed up to this time\nAt this time all active orders are being cancelled\nSee tradingCutoffs for instrument expiration details\nAt this time marketStatus changes to Closed and remains in the same state without changing as per the calendar. — Unix epoch time in seconds"
+            "description": "Mandatory if Category = O (option) OR F (Futures) OR K (Strategies) OR D (Debt instruments)\nUsed for derivatives, trading is allowed up to this time\nAt this time all active orders are being cancelled\nSee tradingCutoffs for instrument expiration details\nAt this time marketStatus changes to Closed and remains in the same state without changing as per the calendar. — Unix epoch time in seconds"
           },
           "tradingCutoffs": {
             "type": "array",
@@ -647,29 +653,31 @@
               "N": "Non-Deliverable",
               "X": "Not set"
             },
-            "description": "Mandatory if Category = O (option) OR F (Futures)\nDelivery type"
+            "description": "Mandatory if Category = O (option) OR F (Futures) OR K (Strategies)\nDelivery type"
           },
           "contractSize": {
             "type": "string",
             "format": "decimal",
-            "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
+            "pattern": "^-?[0-9]+(\\.[0-9]{1,5})?$",
             "default": "1",
             "description": "Contract size\nThe multiplier used to convert instrument trading units to Settlement units (i.e. asset traded in kg and settled in grams)"
           },
           "contractSizeUnit": {
             "type": "string",
+            "maxLength": 50,
             "pattern": "^( *[!-~][ -~]*)?$",
             "description": "Specifies the units that instrument is trading in"
           },
           "priceMultiplier": {
             "type": "string",
             "format": "decimal",
-            "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
+            "pattern": "^-?[0-9]+(\\.[0-9]{1,5})?$",
             "default": "1",
             "description": "The multiplier used to convert quoted per units to Settlement units\nFor example, GOLD 99.99% quoted in USD per oz. price multiplier is applicable to “per oz” part of the definition"
           },
           "priceUnit": {
             "type": "string",
+            "maxLength": 50,
             "pattern": "^( *[!-~][ -~]*)?$",
             "description": "Specifies the quoted unit of the instrument. For example, the price is quoted per Oz"
           },
@@ -701,13 +709,15 @@
           "dailyMinPricePercentage": {
             "type": "string",
             "format": "decimal",
-            "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
+            "pattern": "^-?[0-9]+(\\.[0-9]{1,4})?$",
+            "x-max-value": 10000,
             "description": "Minimum allowed price % change from the last reference price for the instrument"
           },
           "dailyMaxPricePercentage": {
             "type": "string",
             "format": "decimal",
-            "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
+            "pattern": "^-?[0-9]+(\\.[0-9]{1,4})?$",
+            "x-max-value": 10000,
             "description": "Maximum allowed price % change from the last reference price for the instrument"
           },
           "dailyMinPriceAbsolute": {
@@ -725,13 +735,15 @@
           "tickMinPricePercentage": {
             "type": "string",
             "format": "decimal",
-            "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
+            "pattern": "^-?[0-9]+(\\.[0-9]{1,4})?$",
+            "x-max-value": 10000,
             "description": "Minimum allowed price % change from the last executed price for the instrument"
           },
           "tickMaxPricePercentage": {
             "type": "string",
             "format": "decimal",
-            "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
+            "pattern": "^-?[0-9]+(\\.[0-9]{1,4})?$",
+            "x-max-value": 10000,
             "description": "Maximum allowed price % change from the last executed price for the instrument"
           },
           "tickMinPriceAbsolute": {
@@ -820,9 +832,25 @@
             "default": false,
             "description": "Applicable only if Category = K (Strategies)\n- true: System considers best Bid/best Ask when calculating legs allocation price\n- false: best Bid/best Ask is not considered (default)"
           },
+          "impliedOrderTypes": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "IN",
+                "OUT"
+              ],
+              "x-enumDescriptions": {
+                "IN": "Implied In: implied orders are generated into the strategy using the liquidity of its leg instruments",
+                "OUT": "Implied Out: implied orders are generated out of the strategy using the liquidity of the strategy and one of its leg instruments"
+              }
+            },
+            "description": "Applicable only if Category = K (Strategies) AND strategyType = SPREAD, STRIP or STRIP2\nAllowed only if IMPLIED_ORDERS is in the project's featuresFlags\nImplied order types generated for the strategy:\n- IN: implied orders are generated into the strategy using the liquidity of its leg instruments\n- OUT: implied orders are generated out of the strategy using the liquidity of the strategy and one of its leg instruments"
+          },
           "coupon": {
             "type": "string",
-            "pattern": "^[0-9]+$",
+            "format": "decimal",
+            "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
             "description": "Only if Category = D(Debt instruments)\nThe coupon of the bonds"
           },
           "periodOfCoupon": {
@@ -867,6 +895,7 @@
           },
           "periodCode": {
             "type": "string",
+            "maxLength": 9,
             "pattern": "^( *[!-~][ -~]*)?$",
             "description": "Applicable if Category = O (option) OR F (Futures) or K (Strategies)\nPeriod code"
           },
@@ -891,11 +920,13 @@
           "maxRFQExpireTimePeriod": {
             "type": "string",
             "pattern": "^[0-9]+$",
+            "x-max-value": 31536000,
             "description": "Required if tradingModels has ‘RFQ’\nMax allowed expiry time for an RFQ in seconds\nNote: this is the time to maintain RFQ without expiration due to timeout"
           },
           "allegedTradeExpireTimePeriod": {
             "type": "string",
             "pattern": "^[0-9]+$",
+            "x-max-value": 86400,
             "description": "Active Alleged Trades are canceled by the system\nIf configured, after allegedTradeExpireTimePeriod\nIf not configured, at EOD"
           },
           "minQuantityTradeEntries": {
@@ -1807,7 +1838,7 @@
         "tags": [
           "Instruments"
         ],
-        "description": "This API allows to create a new instrument.\n\nID will be returned in the response, this ID is the unique identifier of the instrument and should be used when sending update commands.\n\nNote: this ID can be retrieved via Get Instruments API.\n\n#### Create Instrument- Error Codes\n\n| Code | Message |\n| --- | --- |\n| 1 | System is unavailable |\n| 100 | Missing or invalid parameter: \\[FieldName\\] |\n| 101 | \\[FieldName\\] not found |\n| 101 | \\[FieldName\\] must be less than or equal to maxLong/10^ fieldPrecision |\n| 101 | \\[FieldName\\] must be more than or equal to minLong/10^ fieldPrecision |\n| 101 | Precision of \\[Fieldname\\] is greater than \\[quantityPrecision\\] |\n| 101 | Precision of \\[Fieldname\\] is greater than \\[pricePrecision\\] |\n| 101 | Precision of quantityIncrement must be \\[quantityPrecision\\] (quantityPrecision) |\n| 101 | minQuantity should be less than maxQuantity or equal to it |\n| 101 | minPrice should be less than maxPrice or equal to it |\n| 101 | maxQuantity should be less than maxDepth or equal to it |\n| 101 | Stop Date must be after Start Date |\n| 101 | Stop date must be in future |\n| 101 | underlyingInstrumentId/legsInstrumentIds not found |\n| 101 | Legs \\[price/quantity\\] precision must be equal to strategy price precision |\n| 102 | symbol already exists for id: \\[instrumentId\\] |\n| 104 | Implied orders are not allowed for \\[leg/strategySymbol\\] while included in the \\[CBRName\\] CBR |\n| 105 | Legs \\[price/quantity\\] precision must be equal to strategy price precision |\n| 105 | Strategies are not allowed as legs |\n| 105 | Legs and Strategy calendars must be the same  <br>  <br>Note: this validation is relevant only for active instruments |\n| 2603 | \\[fieldName\\] of \\[fieldValue\\] is not allowed as instrument price precision is \\[instrumentPricePrecision\\] |\n| 2605 | \\[FieldName\\] must be less than maxLong/10^ pricePrecision |\n| 10001 | Permission denied |",
+        "description": "This API allows to create a new instrument.\n\nID will be returned in the response, this ID is the unique identifier of the instrument and should be used when sending update commands.\n\nNote: this ID can be retrieved via Get Instruments API.\n\n#### Create Instrument- Error Codes\n\n| Code | Message |\n| --- | --- |\n| 1 | System is unavailable |\n| 100 | Missing or invalid parameter: \\[FieldName\\] |\n| 100 | Missing or invalid parameter: \\[percentageField\\]/\\[absoluteField\\] |\n| 101 | \\[FieldName\\] not found |\n| 101 | \\[FieldName\\] must be less than or equal to maxLong/10^ fieldPrecision |\n| 101 | \\[FieldName\\] must be more than or equal to minLong/10^ fieldPrecision |\n| 101 | Precision of \\[Fieldname\\] is greater than \\[quantityPrecision\\] |\n| 101 | Precision of \\[Fieldname\\] is greater than \\[pricePrecision\\] |\n| 101 | Precision of quantityIncrement must be \\[quantityPrecision\\] (quantityPrecision) |\n| 101 | minQuantity should be less than maxQuantity or equal to it |\n| 101 | minPrice should be less than maxPrice or equal to it |\n| 101 | maxQuantity should be less than maxDepth or equal to it |\n| 101 | Should be: \\[minQuantity\\] ≤ minQuantityTradeEntry.amount ≤ \\[maxQuantity\\] |\n| 101 | Stop Date must be after Start Date |\n| 101 | Stop date must be in future |\n| 101 | Delivery End Date must be ≥ Delivery Start Date |\n| 101 | underlyingInstrumentId/legsInstrumentIds not found |\n| 101 | AutoResume auction is required by \\[CBRName\\] CBR |\n| 102 | symbol already exists for id: \\[instrumentId\\] |\n| 105 | Legs \\[price/quantity\\] precision must be equal to strategy \\[price/quantity\\] precision |\n| 105 | Strategies are not allowed as legs |\n| 105 | Legs and Strategy calendars must be the same  <br>  <br>Note: this validation is relevant only for active instruments |\n| 105 | Priority \\[value\\] already exists |\n| 2603 | \\[fieldName\\] of \\[fieldValue\\] is not allowed as instrument price precision is \\[instrumentPricePrecision\\] |\n| 2605 | \\[FieldName\\] must be less than maxLong/10^ pricePrecision |\n| 10001 | Permission denied |",
         "parameters": [],
         "responses": {
           "200": {
@@ -5200,7 +5231,7 @@
         "tags": [
           "CBR"
         ],
-        "description": "This API allows to create a new CBR.\n\nID will be returned in the response, this ID is the unique identifier of the CBR and should be used when sending update commands.\n\nNote: this ID can be retrieved via Get CBRs API.\n\n#### Create CBR - Error Codes\n\n| Code | Message |\n| --- | --- |\n| 1 | System is unavailable |\n| 100 | Missing or invalid parameter: \\[FieldName\\] |\n| 100 | Only one of instrumentIds and instrumentGroupIds is allowed |\n| 101 | \\[FieldName\\] not found |\n| 102 | name already exists |\n| 104 | only Resume Auction is allowed for this CBR type |\n| 104 | AutoResume auction needs to be configured with override reference price |\n| 105 | Priority \\[value\\] already exists |\n| 2001 | You can send up to 750 instruments per request |\n| 10001 | Permission denied |",
+        "description": "This API allows to create a new CBR.\n\nID will be returned in the response, this ID is the unique identifier of the CBR and should be used when sending update commands.\n\nNote: this ID can be retrieved via Get CBRs API.\n\n#### Create CBR - Error Codes\n\n| Code | Message |\n| --- | --- |\n| 1 | System is unavailable |\n| 100 | Missing or invalid parameter: \\[FieldName\\] |\n| 100 | Only one of instrumentIds and instrumentGroupIds is allowed |\n| 101 | \\[FieldName\\] not found |\n| 102 | name already exists |\n| 104 | only Resume Auction or Cancel Incoming Order are allowed for this CBR type |\n| 104 | AutoResume auction needs to be configured with override reference price |\n| 105 | Priority \\[value\\] already exists |\n| 2001 | You can send up to 750 instruments per request |\n| 10001 | Permission denied |",
         "parameters": [],
         "responses": {
           "200": {

@@ -137,6 +137,7 @@ operations:
       | --- | --- |
       | 1 | System is unavailable |
       | 100 | Missing or invalid parameter: \[FieldName\] |
+      | 100 | Missing or invalid parameter: \[percentageField\]/\[absoluteField\] |
       | 101 | \[FieldName\] not found |
       | 101 | \[FieldName\] must be less than or equal to maxLong/10^ fieldPrecision |
       | 101 | \[FieldName\] must be more than or equal to minLong/10^ fieldPrecision |
@@ -146,15 +147,17 @@ operations:
       | 101 | minQuantity should be less than maxQuantity or equal to it |
       | 101 | minPrice should be less than maxPrice or equal to it |
       | 101 | maxQuantity should be less than maxDepth or equal to it |
+      | 101 | Should be: \[minQuantity\] ≤ minQuantityTradeEntry.amount ≤ \[maxQuantity\] |
       | 101 | Stop Date must be after Start Date |
       | 101 | Stop date must be in future |
+      | 101 | Delivery End Date must be ≥ Delivery Start Date |
       | 101 | underlyingInstrumentId/legsInstrumentIds not found |
-      | 101 | Legs \[price/quantity\] precision must be equal to strategy price precision |
+      | 101 | AutoResume auction is required by \[CBRName\] CBR |
       | 102 | symbol already exists for id: \[instrumentId\] |
-      | 104 | Implied orders are not allowed for \[leg/strategySymbol\] while included in the \[CBRName\] CBR |
-      | 105 | Legs \[price/quantity\] precision must be equal to strategy price precision |
+      | 105 | Legs \[price/quantity\] precision must be equal to strategy \[price/quantity\] precision |
       | 105 | Strategies are not allowed as legs |
       | 105 | Legs and Strategy calendars must be the same  <br>  <br>Note: this validation is relevant only for active instruments |
+      | 105 | Priority \[value\] already exists |
       | 2603 | \[fieldName\] of \[fieldValue\] is not allowed as instrument price precision is \[instrumentPricePrecision\] |
       | 2605 | \[FieldName\] must be less than maxLong/10^ pricePrecision |
       | 10001 | Permission denied |
@@ -580,7 +583,7 @@ operations:
       | 100 | Only one of instrumentIds and instrumentGroupIds is allowed |
       | 101 | \[FieldName\] not found |
       | 102 | name already exists |
-      | 104 | only Resume Auction is allowed for this CBR type |
+      | 104 | only Resume Auction or Cancel Incoming Order are allowed for this CBR type |
       | 104 | AutoResume auction needs to be configured with override reference price |
       | 105 | Priority \[value\] already exists |
       | 2001 | You can send up to 750 instruments per request |
@@ -986,4 +989,17 @@ operations:
       | 100 | Missing or invalid parameter: \[FieldName\] |
       | 10001 | Permission denied |
 schema_descriptions:
-  Instrument.properties.symbol: Unique Symbol of the instrument, contains [a-Z,0-9,-,.,^,=,/]
+  Instrument.properties.symbol: Unique Symbol of the instrument, contains a-z, A-Z, 0-9 and the characters - . ^ / =
+  Instrument.properties.startDate: |-
+    Mandatory if Category = O (option) OR F (Futures) OR K (Strategies) OR D (Debt instruments)
+    Used for derivatives, trading is allowed from this time
+    Before this time, marketStatus is in Closed state without changing as per the calendar. — Unix epoch time in seconds
+  Instrument.properties.stopDate: |-
+    Mandatory if Category = O (option) OR F (Futures) OR K (Strategies) OR D (Debt instruments)
+    Used for derivatives, trading is allowed up to this time
+    At this time all active orders are being cancelled
+    See tradingCutoffs for instrument expiration details
+    At this time marketStatus changes to Closed and remains in the same state without changing as per the calendar. — Unix epoch time in seconds
+  Instrument.properties.deliveryType: |-
+    Mandatory if Category = O (option) OR F (Futures) OR K (Strategies)
+    Delivery type
