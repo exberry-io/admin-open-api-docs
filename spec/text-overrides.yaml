@@ -1006,5 +1006,4 @@ schema_descriptions:
   Instrument.properties.impliedOrderTypes: |-
     Applicable only if Category = K (Strategies) AND strategyType = SPREAD, STRIP or STRIP2
     Allowed only if IMPLIED_ORDERS is in the project's featuresFlags
-    Implied order types generated for the strategy
     The field is included in the responses only when not empty

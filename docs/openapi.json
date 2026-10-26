@@ -845,7 +845,7 @@
                 "OUT": "Implied Out: implied orders are generated out of the strategy using the liquidity of the strategy and one of its leg instruments"
               }
             },
-            "description": "Applicable only if Category = K (Strategies) AND strategyType = SPREAD, STRIP or STRIP2\nAllowed only if IMPLIED_ORDERS is in the project's featuresFlags\nImplied order types generated for the strategy\nThe field is included in the responses only when not empty"
+            "description": "Applicable only if Category = K (Strategies) AND strategyType = SPREAD, STRIP or STRIP2\nAllowed only if IMPLIED_ORDERS is in the project's featuresFlags\nThe field is included in the responses only when not empty"
           },
           "coupon": {
             "type": "string",
